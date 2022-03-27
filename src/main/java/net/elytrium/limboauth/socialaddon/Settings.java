@@ -81,7 +81,7 @@ public class Settings extends Config {
 
       public String LINK_CMD_USAGE = "{PRFX} Send '!account link {NICKNAME}' to our Social Bot{NL} VK: vk.com/123{NL} DS: Bot#0000{NL} TG: @bot";
       public String LINK_WRONG_CODE = "{PRFX} Wrong code, run '!account link {NICKNAME}' again";
-      public String LINK_SUCCESS = "✅ Social was successfully linked";
+      public String LINK_SUCCESS = "✅ Social was successfully linked{NL}Use '!keyboard' to show keyboard";
       public String LINK_ALREADY = "Account is already linked";
       public String LINK_CODE = "🔑 Enter '/addsocial {CODE}' in game to complete account linking";
 

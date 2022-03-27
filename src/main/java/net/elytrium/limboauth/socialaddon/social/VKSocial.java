@@ -26,6 +26,7 @@ import api.longpoll.bots.model.objects.additional.buttons.TextButton;
 import api.longpoll.bots.model.objects.basic.Message;
 import com.google.gson.JsonObject;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 import net.elytrium.limboauth.socialaddon.Settings;
 import net.elytrium.limboauth.socialaddon.model.SocialPlayer;
@@ -49,10 +50,18 @@ public class VKSocial extends AbstractSocial {
     }
 
     this.bot = new BotImpl(Settings.IMP.MAIN.VK.TOKEN, this::proceedMessage, this::proceedButton);
-    try {
-      this.bot.startPolling();
-    } catch (VkApiException e) {
-      throw new SocialInitializationException(e);
+    AtomicReference<VkApiException> ex = new AtomicReference<>();
+
+    new Thread(() -> {
+      try {
+        this.bot.startPolling();
+      } catch (VkApiException e) {
+        ex.set(e);
+      }
+    }).start();
+
+    if (ex.get() != null) {
+      throw new SocialInitializationException(ex.get());
     }
   }
 
@@ -126,12 +135,16 @@ public class VKSocial extends AbstractSocial {
     public void onMessageNew(MessageNew messageNew) {
       Message message = messageNew.getMessage();
 
+      if (message == null) {
+        return;
+      }
+
       if (message.getPayload() != null && message.getPayload().isJsonObject()) {
         JsonObject object = message.getPayload().getAsJsonObject();
         if (object.has("button")) {
           this.onButtonClicked.accept(SocialPlayer.VK_DB_FIELD, Long.valueOf(message.getPeerId()), object.get("button").getAsString());
         }
-      } else {
+      } else if (message.hasText()) {
         this.onMessageReceived.accept(SocialPlayer.VK_DB_FIELD, Long.valueOf(message.getPeerId()), message.getText());
       }
     }

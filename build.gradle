@@ -65,8 +65,6 @@ shadowJar {
     exclude("org/checkerframework/**")
     exclude("**/package-info.class")
 
-    minimize()
-
     // Why are we increasing the size of the plugin if we can do that? :thinking:
     relocate("org.bstats", "net.elytrium.limboapi.thirdparty.org.bstats")
     exclude("org/bstats/**")
