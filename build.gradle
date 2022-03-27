@@ -1,0 +1,115 @@
+//file:noinspection GroovyAssignabilityCheck
+
+plugins {
+    id("java")
+    id("checkstyle")
+    id("com.github.spotbugs").version("5.0.5")
+    id("org.cadixdev.licenser").version("0.6.1")
+    id("com.github.johnrengelman.shadow").version("7.1.2")
+}
+
+setGroup("net.elytrium")
+setVersion("1.0.0")
+
+compileJava {
+    getOptions().setEncoding("UTF-8")
+}
+
+java {
+    setSourceCompatibility(JavaVersion.VERSION_11)
+    setTargetCompatibility(JavaVersion.VERSION_11)
+}
+
+repositories {
+    mavenCentral()
+
+    maven {
+        setName("elytrium-repo")
+        setUrl("https://maven.elytrium.net/repo/")
+    }
+    maven {
+        setName("papermc-repo")
+        setUrl("https://papermc.io/repo/repository/maven-public/")
+    }
+    maven {
+        setName("opencollab-repo")
+        setUrl("https://repo.opencollab.dev/maven-snapshots/")
+    }
+}
+
+dependencies {
+    compileOnly("net.elytrium:limboapi-api:1.0.4-SNAPSHOT")
+    compileOnly("net.elytrium:limboauth:1.0.4-SNAPSHOT")
+    compileOnly("com.velocitypowered:velocity-api:3.1.2-SNAPSHOT")
+    annotationProcessor("com.velocitypowered:velocity-api:3.1.2-SNAPSHOT")
+
+    implementation("net.dv8tion:JDA:5.0.0-alpha.9") {
+        exclude module: 'opus-java'
+    }
+    implementation("org.telegram:telegrambots:5.7.1")
+    implementation("com.github.yvasyliev:java-vk-bots-longpoll-api:3.2.9")
+
+    implementation("org.bstats:bstats-velocity:2.2.1")
+    compileOnly("com.github.spotbugs:spotbugs-annotations:4.5.3")
+}
+
+shadowJar {
+    getArchiveClassifier().set("")
+
+    exclude("META-INF/maven/**")
+    exclude("META-INF/INFO_BIN")
+    exclude("META-INF/INFO_SRC")
+    exclude("google/protobuf/**")
+    exclude("com/google/protobuf/**")
+    exclude("org/apache/commons/codec/language/**")
+    exclude("org/checkerframework/**")
+    exclude("**/package-info.class")
+
+    minimize()
+
+    // Why are we increasing the size of the plugin if we can do that? :thinking:
+    relocate("org.bstats", "net.elytrium.limboapi.thirdparty.org.bstats")
+    exclude("org/bstats/**")
+
+    relocate("net.dv8tion.jda", "net.elytrium.limboapi.thirdparty.net.dv8tion.jda")
+    relocate("org.telegram.telegrambots", "net.elytrium.limboapi.thirdparty.org.telegram.telegrambots")
+    relocate("api.longpoll.bots", "net.elytrium.limboapi.thirdparty.api.longpoll.bots")
+}
+
+license {
+    setHeader(file("HEADER.txt"))
+}
+
+checkstyle {
+    setToolVersion("9.2.1")
+    setConfigFile(file("${this.getRootDir()}/config/checkstyle/checkstyle.xml"))
+    setConfigProperties("configDirectory": "${this.getRootDir()}/config/checkstyle")
+
+    // The build should immediately fail if we have errors.
+    setMaxErrors(0)
+    setMaxWarnings(0)
+}
+
+spotbugsMain {
+    setExcludeFilter(file("${this.getRootDir()}/config/spotbugs/suppressions.xml"))
+
+    reports {
+        html {
+            getRequired().set(true)
+            getOutputLocation().set(file("${this.getBuildDir()}/reports/spotbugs/main/spotbugs.html"))
+            setStylesheet("fancy-hist.xsl")
+        }
+    }
+}
+
+sourceSets.main.getJava().srcDir(getTasks().register("generateTemplates", Copy) { task ->
+    task.getInputs().properties("version": getVersion())
+
+    task.from(file("src/main/templates"))
+            .into(getLayout().getBuildDirectory().dir("generated/sources/templates"))
+            .expand("version": getVersion())
+}.map {
+    it.getOutputs()
+})
+
+assemble.dependsOn(shadowJar)
