@@ -21,7 +21,7 @@ import net.elytrium.limboauth.thirdparty.com.j256.ormlite.field.DatabaseField;
 import net.elytrium.limboauth.thirdparty.com.j256.ormlite.table.DatabaseTable;
 
 @SuppressWarnings("unused")
-@DatabaseTable(tableName = "AUTH")
+@DatabaseTable(tableName = "SOCIAL")
 public class SocialPlayer {
   public static final String LOWERCASE_NICKNAME_FIELD = "LOWERCASENICKNAME";
   public static final String VK_DB_FIELD = "VK_ID";

@@ -74,7 +74,8 @@ public class ValidateLinkCommand implements SimpleCommand {
                   this.addon.getServer().getCommandManager().executeAsync(p -> Tristate.TRUE,
                       command.replace("{NICKNAME}", player.getUsername()).replace("{UUID}", player.getUniqueId().toString())));
 
-              this.addon.getSocialManager().broadcastMessage(tempAccount.getDbField(), tempAccount.getId(), Settings.IMP.MAIN.STRINGS.LINK_SUCCESS);
+              this.addon.getSocialManager()
+                  .broadcastMessage(tempAccount.getDbField(), tempAccount.getId(), Settings.IMP.MAIN.STRINGS.LINK_SUCCESS, this.addon.getKeyboard());
             } else {
               source.sendMessage(LegacyComponentSerializer
                   .legacyAmpersand()

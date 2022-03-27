@@ -64,7 +64,7 @@ public class DiscordSocial extends AbstractSocial {
 
   @Override
   public void sendMessage(Long id, String content, List<List<ButtonItem>> buttons) {
-    User user = this.jda.getUserById(id);
+    User user = this.jda.retrieveUserById(id).complete();
 
     if (user == null) {
       return;
@@ -97,7 +97,20 @@ public class DiscordSocial extends AbstractSocial {
         }).collect(Collectors.toList()))
     ).collect(Collectors.toList());
 
-    user.openPrivateChannel().submit().thenAccept(privateChannel -> privateChannel.sendMessage(content).setActionRows(actionRowList).queue());
+    user.openPrivateChannel()
+        .submit()
+        .thenAccept(privateChannel -> privateChannel
+            .sendMessage(content)
+            .setActionRows(actionRowList)
+            .submit()
+            .exceptionally(e -> {
+              e.printStackTrace();
+              return null;
+            }))
+        .exceptionally(e -> {
+          e.printStackTrace();
+          return null;
+        });
   }
 
   @Override
@@ -127,7 +140,8 @@ public class DiscordSocial extends AbstractSocial {
 
     @Override
     public void onButtonInteraction(@NotNull ButtonInteractionEvent event) {
-      this.onButtonClicked.accept(SocialPlayer.DISCORD_DB_FIELD, event.getUser().getIdLong(), event.getId());
+      event.deferEdit().queue();
+      this.onButtonClicked.accept(SocialPlayer.DISCORD_DB_FIELD, event.getUser().getIdLong(), event.getButton().getId());
     }
 
   }

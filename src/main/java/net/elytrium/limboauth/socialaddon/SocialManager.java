@@ -61,7 +61,7 @@ public class SocialManager {
   }
 
   public void init() {
-    this.socialList.forEach(abstractSocial -> {
+    this.socialList.stream().filter(AbstractSocial::isEnabled).forEach(abstractSocial -> {
       try {
         abstractSocial.init();
       } catch (SocialInitializationException e) {
@@ -82,8 +82,8 @@ public class SocialManager {
         .forEach(e -> e.sendMessage(player, message));
   }
 
-  public void broadcastMessage(Long id, String message, List<List<AbstractSocial.ButtonItem>> item) {
-    this.socialList.forEach(e -> e.sendMessage(id, message, item));
+  public void broadcastMessage(String dbField, Long id, String message, List<List<AbstractSocial.ButtonItem>> item) {
+    this.socialList.stream().filter(e -> e.getDbField().equals(dbField)).forEach(e -> e.sendMessage(id, message, item));
   }
 
   public void broadcastMessage(String dbField, Long id, String message) {

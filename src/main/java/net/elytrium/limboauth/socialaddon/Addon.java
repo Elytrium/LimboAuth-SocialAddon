@@ -17,6 +17,7 @@
 
 package net.elytrium.limboauth.socialaddon;
 
+import com.google.inject.Inject;
 import com.velocitypowered.api.command.CommandManager;
 import com.velocitypowered.api.event.PostOrder;
 import com.velocitypowered.api.event.Subscribe;
@@ -78,6 +79,7 @@ public class Addon {
 
   private final ProxyServer server;
   private final Logger logger;
+  private final Metrics.Factory metricsFactory;
   private final Path dataDirectory;
   private final LimboAuth plugin;
 
@@ -88,9 +90,13 @@ public class Addon {
 
   private Dao<SocialPlayer, String> dao;
 
+  private List<List<AbstractSocial.ButtonItem>> keyboard;
+
+  @Inject
   public Addon(ProxyServer server, Logger logger, Metrics.Factory metricsFactory, @DataDirectory Path dataDirectory) {
     this.server = server;
     this.logger = logger;
+    this.metricsFactory = metricsFactory;
     this.dataDirectory = dataDirectory;
 
     this.plugin = (LimboAuth) this.server.getPluginManager().getPlugin("limboauth").flatMap(PluginContainer::getInstance).orElseThrow();
@@ -98,16 +104,16 @@ public class Addon {
     this.codeMap = new HashMap<>();
     this.requestedMap = new HashMap<>();
     this.requestedReverseMap = new HashMap<>();
-
-    metricsFactory.make(this, 14770);
   }
 
-  @Subscribe(order = PostOrder.LAST)
+  @Subscribe(order = PostOrder.FIRST)
   public void onProxyInitialization(ProxyInitializeEvent event) {
     Settings.IMP.reload(new File(this.dataDirectory.toFile().getAbsoluteFile(), "config.yml"));
+    this.metricsFactory.make(this, 14770);
+
     this.socialManager.init();
 
-    List<List<AbstractSocial.ButtonItem>> keyboard = List.of(
+    this.keyboard = List.of(
         List.of(
             new AbstractSocial.ButtonItem(INFO_BTN, Settings.IMP.MAIN.STRINGS.INFO_BTN, AbstractSocial.ButtonItem.Color.PRIMARY)
         ),
@@ -153,7 +159,7 @@ public class Addon {
         this.codeMap.put(account, code);
         this.socialManager.broadcastMessage(dbField, id, Settings.IMP.MAIN.STRINGS.LINK_CODE.replace("{CODE}", String.valueOf(code)));
       } else if (message.startsWith(Settings.IMP.MAIN.FORCE_KEYBOARD_CMD)) {
-        this.socialManager.broadcastMessage(id, Settings.IMP.MAIN.STRINGS.KEYBOARD_RESTORED, keyboard);
+        this.socialManager.broadcastMessage(dbField, id, Settings.IMP.MAIN.STRINGS.KEYBOARD_RESTORED, this.keyboard);
       }
     });
 
@@ -386,6 +392,10 @@ public class Addon {
 
   public ProxyServer getServer() {
     return this.server;
+  }
+
+  public List<List<AbstractSocial.ButtonItem>> getKeyboard() {
+    return this.keyboard;
   }
 
   public static class TempAccount {
