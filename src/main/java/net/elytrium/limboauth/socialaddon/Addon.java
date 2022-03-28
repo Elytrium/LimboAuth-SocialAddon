@@ -61,7 +61,7 @@ import org.slf4j.Logger;
 @Plugin(
     id = "limboauth-social-addon",
     name = "LimboAuth Social Addon",
-    version = "@version@",
+    version = BuildConstants.ADDON_VERSION,
     authors = {"hevav", "mdxd44"},
     dependencies = {
         @Dependency(id = "limboauth")
@@ -217,10 +217,12 @@ public class Addon {
 
         if (player.isBlocked()) {
           player.setBlocked(false);
-          this.socialManager.broadcastMessage(dbField, id, Settings.IMP.MAIN.STRINGS.UNBLOCK_SUCCESS.replace("{NICKNAME}", player.getLowercaseNickname()));
+          this.socialManager.broadcastMessage(dbField, id,
+              Settings.IMP.MAIN.STRINGS.UNBLOCK_SUCCESS.replace("{NICKNAME}", player.getLowercaseNickname()), this.keyboard);
         } else {
           player.setBlocked(true);
-          this.socialManager.broadcastMessage(dbField, id, Settings.IMP.MAIN.STRINGS.BLOCK_SUCCESS.replace("{NICKNAME}", player.getLowercaseNickname()));
+          this.socialManager.broadcastMessage(dbField, id,
+              Settings.IMP.MAIN.STRINGS.BLOCK_SUCCESS.replace("{NICKNAME}", player.getLowercaseNickname()), this.keyboard);
         }
 
         this.dao.update(player);
@@ -242,11 +244,11 @@ public class Addon {
         if (player.isTotpEnabled()) {
           player.setTotpEnabled(false);
           this.socialManager.broadcastMessage(dbField, id,
-              Settings.IMP.MAIN.STRINGS.TOTP_DISABLE_SUCCESS.replace("{NICKNAME}", player.getLowercaseNickname()));
+              Settings.IMP.MAIN.STRINGS.TOTP_DISABLE_SUCCESS.replace("{NICKNAME}", player.getLowercaseNickname()), this.keyboard);
         } else {
           player.setTotpEnabled(true);
           this.socialManager.broadcastMessage(dbField, id,
-              Settings.IMP.MAIN.STRINGS.TOTP_ENABLE_SUCCESS.replace("{NICKNAME}", player.getLowercaseNickname()));
+              Settings.IMP.MAIN.STRINGS.TOTP_ENABLE_SUCCESS.replace("{NICKNAME}", player.getLowercaseNickname()), this.keyboard);
         }
 
         this.dao.update(player);
@@ -268,11 +270,11 @@ public class Addon {
         if (player.isNotifyEnabled()) {
           player.setNotifyEnabled(false);
           this.socialManager.broadcastMessage(dbField, id,
-              Settings.IMP.MAIN.STRINGS.NOTIFY_DISABLE_SUCCESS.replace("{NICKNAME}", player.getLowercaseNickname()));
+              Settings.IMP.MAIN.STRINGS.NOTIFY_DISABLE_SUCCESS.replace("{NICKNAME}", player.getLowercaseNickname()), this.keyboard);
         } else {
           player.setNotifyEnabled(true);
           this.socialManager.broadcastMessage(dbField, id,
-              Settings.IMP.MAIN.STRINGS.NOTIFY_ENABLE_SUCCESS.replace("{NICKNAME}", player.getLowercaseNickname()));
+              Settings.IMP.MAIN.STRINGS.NOTIFY_ENABLE_SUCCESS.replace("{NICKNAME}", player.getLowercaseNickname()), this.keyboard);
         }
 
         this.dao.update(player);
@@ -293,9 +295,9 @@ public class Addon {
         Optional<Player> proxyPlayer = this.server.getPlayer(player.getLowercaseNickname());
         if (proxyPlayer.isPresent()) {
           proxyPlayer.get().disconnect(LegacyComponentSerializer.legacyAmpersand().deserialize(Settings.IMP.MAIN.STRINGS.KICK_GAME_MESSAGE));
-          this.socialManager.broadcastMessage(dbField, id, Settings.IMP.MAIN.STRINGS.KICK_SUCCESS);
+          this.socialManager.broadcastMessage(dbField, id, Settings.IMP.MAIN.STRINGS.KICK_SUCCESS, this.keyboard);
         } else {
-          this.socialManager.broadcastMessage(dbField, id, Settings.IMP.MAIN.STRINGS.KICK_IS_OFFLINE);
+          this.socialManager.broadcastMessage(dbField, id, Settings.IMP.MAIN.STRINGS.KICK_IS_OFFLINE, this.keyboard);
         }
 
         this.dao.update(player);
@@ -323,7 +325,8 @@ public class Addon {
         updateBuilder.update();
 
         this.socialManager.broadcastMessage(dbField, id,
-            Settings.IMP.MAIN.STRINGS.RESTORE_MSG.replace("{NICKNAME}", player.getLowercaseNickname()).replace("{PASSWORD}", newPassword));
+            Settings.IMP.MAIN.STRINGS.RESTORE_MSG.replace("{NICKNAME}", player.getLowercaseNickname()).replace("{PASSWORD}", newPassword),
+            this.keyboard);
       } catch (SQLException e) {
         e.printStackTrace();
       }
@@ -359,7 +362,7 @@ public class Addon {
 
     this.plugin.migrateDb(this.dao);
 
-    this.server.getEventManager().register(this, new LimboAuthListener(this.dao, this.socialManager));
+    this.server.getEventManager().register(this, new LimboAuthListener(this.dao, this.socialManager, this.keyboard));
 
     CommandManager commandManager = this.server.getCommandManager();
     commandManager.unregister(Settings.IMP.MAIN.LINKAGE_MAIN_CMD);

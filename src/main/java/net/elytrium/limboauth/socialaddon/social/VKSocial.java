@@ -19,10 +19,11 @@ package net.elytrium.limboauth.socialaddon.social;
 
 import api.longpoll.bots.LongPollBot;
 import api.longpoll.bots.exceptions.VkApiException;
+import api.longpoll.bots.model.events.messages.MessageEvent;
 import api.longpoll.bots.model.events.messages.MessageNew;
 import api.longpoll.bots.model.objects.additional.Keyboard;
 import api.longpoll.bots.model.objects.additional.buttons.Button;
-import api.longpoll.bots.model.objects.additional.buttons.TextButton;
+import api.longpoll.bots.model.objects.additional.buttons.CallbackButton;
 import api.longpoll.bots.model.objects.basic.Message;
 import com.google.gson.JsonObject;
 import java.util.List;
@@ -94,7 +95,7 @@ public class VKSocial extends AbstractSocial {
       JsonObject payload = new JsonObject();
       payload.addProperty("button", button.getId());
 
-      return (Button) new TextButton(color, new TextButton.Action(button.getValue(), payload));
+      return (Button) new CallbackButton(color, new CallbackButton.Action(button.getValue(), payload));
     }).collect(Collectors.toList())).collect(Collectors.toList());
 
     this.bot.sendMessage(id.intValue(), content, vkButtons);
@@ -128,7 +129,12 @@ public class VKSocial extends AbstractSocial {
     }
 
     public void sendMessage(Integer id, String content, List<List<Button>> buttons) {
-      this.vk.messages.send().setChatId(id).setMessage(content).setKeyboard(new Keyboard(buttons));
+      try {
+        Keyboard keyboard = new Keyboard(buttons).setInline(false).setOneTime(false);
+        this.vk.messages.send().setUserId(id).setMessage(content).setKeyboard(keyboard).execute();
+      } catch (VkApiException e) {
+        e.printStackTrace();
+      }
     }
 
     @Override
@@ -139,13 +145,27 @@ public class VKSocial extends AbstractSocial {
         return;
       }
 
-      if (message.getPayload() != null && message.getPayload().isJsonObject()) {
-        JsonObject object = message.getPayload().getAsJsonObject();
+      if (message.hasText()) {
+        this.onMessageReceived.accept(SocialPlayer.VK_DB_FIELD, Long.valueOf(message.getFromId()), message.getText());
+      }
+    }
+
+    @Override
+    public void onMessageEvent(MessageEvent messageEvent) {
+      if (messageEvent.getPayload() != null && messageEvent.getPayload().isJsonObject()) {
+        JsonObject object = messageEvent.getPayload().getAsJsonObject();
         if (object.has("button")) {
-          this.onButtonClicked.accept(SocialPlayer.VK_DB_FIELD, Long.valueOf(message.getPeerId()), object.get("button").getAsString());
+          try {
+            this.vk.messages.sendEventAnswer()
+                .setEventId(messageEvent.getEventId())
+                .setUserId(messageEvent.getUserId())
+                .setPeerId(messageEvent.getPeerId())
+                .execute();
+          } catch (VkApiException e) {
+            e.printStackTrace();
+          }
+          this.onButtonClicked.accept(SocialPlayer.VK_DB_FIELD, Long.valueOf(messageEvent.getUserId()), object.get("button").getAsString());
         }
-      } else if (message.hasText()) {
-        this.onMessageReceived.accept(SocialPlayer.VK_DB_FIELD, Long.valueOf(message.getPeerId()), message.getText());
       }
     }
   }

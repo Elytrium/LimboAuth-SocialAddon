@@ -72,12 +72,14 @@ public class SocialManager {
 
   public void broadcastMessage(SocialPlayer player, String message, List<List<AbstractSocial.ButtonItem>> item) {
     this.socialList.stream()
+        .filter(AbstractSocial::isEnabled)
         .filter(e -> e.canSend(player))
         .forEach(e -> e.sendMessage(player, message, item));
   }
 
   public void broadcastMessage(SocialPlayer player, String message) {
     this.socialList.stream()
+        .filter(AbstractSocial::isEnabled)
         .filter(e -> e.canSend(player))
         .forEach(e -> e.sendMessage(player, message));
   }

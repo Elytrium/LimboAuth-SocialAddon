@@ -50,11 +50,13 @@ public class LimboAuthListener {
   private final SocialManager socialManager;
 
   private final List<List<AbstractSocial.ButtonItem>> yesNoButtons;
+  private final List<List<AbstractSocial.ButtonItem>> keyboard;
   private final HashMap<String, PostAuthorizationEvent> sessions = new HashMap<>();
 
-  public LimboAuthListener(Dao<SocialPlayer, String> socialPlayerDao, SocialManager socialManager) {
+  public LimboAuthListener(Dao<SocialPlayer, String> socialPlayerDao, SocialManager socialManager, List<List<AbstractSocial.ButtonItem>> keyboard) {
     this.socialPlayerDao = socialPlayerDao;
     this.socialManager = socialManager;
+    this.keyboard = keyboard;
     this.yesNoButtons = Collections.singletonList(Arrays.asList(
         new AbstractSocial.ButtonItem(ASK_NO_BTN, Settings.IMP.MAIN.STRINGS.NOTIFY_ASK_NO, AbstractSocial.ButtonItem.Color.RED),
         new AbstractSocial.ButtonItem(ASK_YES_BTN, Settings.IMP.MAIN.STRINGS.NOTIFY_ASK_YES, AbstractSocial.ButtonItem.Color.GREEN)
@@ -95,7 +97,7 @@ public class LimboAuthListener {
     SocialPlayer player = this.queryPlayer(event.getPlayer());
     if (player != null && Settings.IMP.MAIN.ENABLE_NOTIFY && player.isNotifyEnabled()) {
       String ip = event.getPlayer().getRemoteAddress().getAddress().getHostAddress();
-      this.socialManager.broadcastMessage(player, Settings.IMP.MAIN.STRINGS.NOTIFY_JOIN.replace("{IP}", ip));
+      this.socialManager.broadcastMessage(player, Settings.IMP.MAIN.STRINGS.NOTIFY_JOIN.replace("{IP}", ip), this.keyboard);
     }
   }
 
@@ -104,7 +106,7 @@ public class LimboAuthListener {
     SocialPlayer player = this.queryPlayer(event.getPlayer());
     if (player != null) {
       if (Settings.IMP.MAIN.ENABLE_NOTIFY && player.isNotifyEnabled()) {
-        this.socialManager.broadcastMessage(player, Settings.IMP.MAIN.STRINGS.NOTIFY_LEAVE);
+        this.socialManager.broadcastMessage(player, Settings.IMP.MAIN.STRINGS.NOTIFY_LEAVE, this.keyboard);
       }
 
       this.sessions.remove(player.getLowercaseNickname());
