@@ -60,6 +60,10 @@ public class SocialManager {
     this.buttonEvents.put(id, event);
   }
 
+  public void removeButtonEvent(String id) {
+    this.buttonEvents.remove(id);
+  }
+
   public void init() {
     this.socialList.stream().filter(AbstractSocial::isEnabled).forEach(abstractSocial -> {
       try {

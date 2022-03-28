@@ -27,6 +27,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import net.elytrium.limboauth.event.AuthUnregisterEvent;
 import net.elytrium.limboauth.event.PostAuthorizationEvent;
 import net.elytrium.limboauth.event.PreAuthorizationEvent;
 import net.elytrium.limboauth.event.TaskEvent;
@@ -57,10 +58,15 @@ public class LimboAuthListener {
     this.socialPlayerDao = socialPlayerDao;
     this.socialManager = socialManager;
     this.keyboard = keyboard;
-    this.yesNoButtons = Collections.singletonList(Arrays.asList(
-        new AbstractSocial.ButtonItem(ASK_NO_BTN, Settings.IMP.MAIN.STRINGS.NOTIFY_ASK_NO, AbstractSocial.ButtonItem.Color.RED),
-        new AbstractSocial.ButtonItem(ASK_YES_BTN, Settings.IMP.MAIN.STRINGS.NOTIFY_ASK_YES, AbstractSocial.ButtonItem.Color.GREEN)
-    ));
+    this.yesNoButtons = Collections.singletonList(
+        Arrays.asList(
+            new AbstractSocial.ButtonItem(ASK_NO_BTN, Settings.IMP.MAIN.STRINGS.NOTIFY_ASK_NO, AbstractSocial.ButtonItem.Color.RED),
+            new AbstractSocial.ButtonItem(ASK_YES_BTN, Settings.IMP.MAIN.STRINGS.NOTIFY_ASK_YES, AbstractSocial.ButtonItem.Color.GREEN)
+        )
+    );
+
+    this.socialManager.removeButtonEvent(ASK_NO_BTN);
+    this.socialManager.removeButtonEvent(ASK_YES_BTN);
 
     this.socialManager.addButtonEvent(ASK_NO_BTN, (dbField, id) -> {
       SocialPlayer player = this.queryPlayer(dbField, id);
@@ -110,6 +116,15 @@ public class LimboAuthListener {
       }
 
       this.sessions.remove(player.getLowercaseNickname());
+    }
+  }
+
+  @Subscribe
+  public void onUnregister(AuthUnregisterEvent event) {
+    try {
+      this.socialPlayerDao.deleteById(event.getNickname().toLowerCase(Locale.ROOT));
+    } catch (SQLException e) {
+      e.printStackTrace();
     }
   }
 

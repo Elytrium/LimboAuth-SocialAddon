@@ -294,6 +294,7 @@ public class Addon {
         SocialPlayer player = socialPlayerList.get(0);
         Optional<Player> proxyPlayer = this.server.getPlayer(player.getLowercaseNickname());
         if (proxyPlayer.isPresent()) {
+          this.plugin.removePlayerFromCache(player.getLowercaseNickname());
           proxyPlayer.get().disconnect(LegacyComponentSerializer.legacyAmpersand().deserialize(Settings.IMP.MAIN.STRINGS.KICK_GAME_MESSAGE));
           this.socialManager.broadcastMessage(dbField, id, Settings.IMP.MAIN.STRINGS.KICK_SUCCESS, this.keyboard);
         } else {
