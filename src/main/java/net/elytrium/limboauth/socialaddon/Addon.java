@@ -35,6 +35,7 @@ import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ThreadLocalRandom;
 import net.elytrium.limboauth.LimboAuth;
@@ -91,6 +92,14 @@ public class Addon {
   private Dao<SocialPlayer, String> dao;
 
   private List<List<AbstractSocial.ButtonItem>> keyboard;
+
+  static {
+    Objects.requireNonNull(org.apache.commons.logging.impl.LogFactoryImpl.class);
+    Objects.requireNonNull(org.apache.commons.logging.impl.Log4JLogger.class);
+    Objects.requireNonNull(org.apache.commons.logging.impl.Jdk14Logger.class);
+    Objects.requireNonNull(org.apache.commons.logging.impl.Jdk13LumberjackLogger.class);
+    Objects.requireNonNull(org.apache.commons.logging.impl.SimpleLog.class);
+  }
 
   @Inject
   public Addon(ProxyServer server, Logger logger, Metrics.Factory metricsFactory, @DataDirectory Path dataDirectory) {
