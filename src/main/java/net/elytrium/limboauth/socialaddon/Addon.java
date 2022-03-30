@@ -238,6 +238,12 @@ public class Addon {
               Settings.IMP.MAIN.STRINGS.UNBLOCK_SUCCESS.replace("{NICKNAME}", player.getLowercaseNickname()), this.keyboard);
         } else {
           player.setBlocked(true);
+
+          this.plugin.removePlayerFromCache(player.getLowercaseNickname());
+          this.server
+              .getPlayer(player.getLowercaseNickname())
+              .ifPresent(e -> e.disconnect(LegacyComponentSerializer.legacyAmpersand().deserialize(Settings.IMP.MAIN.STRINGS.KICK_GAME_MESSAGE)));
+
           this.socialManager.broadcastMessage(dbField, id,
               Settings.IMP.MAIN.STRINGS.BLOCK_SUCCESS.replace("{NICKNAME}", player.getLowercaseNickname()), this.keyboard);
         }
@@ -310,8 +316,9 @@ public class Addon {
 
         SocialPlayer player = socialPlayerList.get(0);
         Optional<Player> proxyPlayer = this.server.getPlayer(player.getLowercaseNickname());
+        this.plugin.removePlayerFromCache(player.getLowercaseNickname());
+
         if (proxyPlayer.isPresent()) {
-          this.plugin.removePlayerFromCache(player.getLowercaseNickname());
           proxyPlayer.get().disconnect(LegacyComponentSerializer.legacyAmpersand().deserialize(Settings.IMP.MAIN.STRINGS.KICK_GAME_MESSAGE));
           this.socialManager.broadcastMessage(dbField, id,
               Settings.IMP.MAIN.STRINGS.KICK_SUCCESS.replace("{NICKNAME}", player.getLowercaseNickname()), this.keyboard);
@@ -361,6 +368,11 @@ public class Addon {
         }
 
         SocialPlayer player = socialPlayerList.get(0);
+
+        if (player.isBlocked()) {
+          this.socialManager.broadcastMessage(dbField, id, Settings.IMP.MAIN.STRINGS.UNLINK_BLOCK_CONFLICT, this.keyboard);
+          return;
+        }
 
         if (Settings.IMP.MAIN.UNLINK_BTN_ALL) {
           this.dao.delete(player);

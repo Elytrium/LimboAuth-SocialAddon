@@ -136,6 +136,7 @@ public class Settings extends Config {
       public String TOGGLE_2FA_BTN = "Toggle 2FA";
       public String UNLINK_BTN = "Unlink social";
       public String UNLINK_SUCCESS = "Unlink successful";
+      public String UNLINK_BLOCK_CONFLICT = "You cannot unlink the social while your account is blocked. Unblock it first";
 
       public String KEYBOARD_RESTORED = "Keyboard was restored";
 
