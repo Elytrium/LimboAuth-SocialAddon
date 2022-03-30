@@ -38,6 +38,7 @@ import java.util.Locale;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.regex.Pattern;
 import net.elytrium.limboauth.LimboAuth;
 import net.elytrium.limboauth.event.AuthPluginReloadEvent;
 import net.elytrium.limboauth.handler.AuthSessionHandler;
@@ -90,6 +91,7 @@ public class Addon {
   private final HashMap<String, TempAccount> requestedReverseMap;
 
   private Dao<SocialPlayer, String> dao;
+  private Pattern nicknamePattern;
 
   private List<List<AbstractSocial.ButtonItem>> keyboard;
 
@@ -142,6 +144,12 @@ public class Addon {
 
     this.socialManager.addMessageEvent((dbField, id, message) -> {
       if (message.startsWith(Settings.IMP.MAIN.SOCIAL_LINK_CMD)) {
+        int desiredLength = Settings.IMP.MAIN.SOCIAL_LINK_CMD.length() + 1;
+
+        if (message.length() <= desiredLength) {
+          return;
+        }
+
         try {
           if (this.dao.queryForEq(dbField, id).size() != 0) {
             this.socialManager.broadcastMessage(dbField, id, Settings.IMP.MAIN.STRINGS.LINK_ALREADY);
@@ -152,8 +160,8 @@ public class Addon {
           return;
         }
 
-        String account = message.substring(Settings.IMP.MAIN.SOCIAL_LINK_CMD.length() + 1).toLowerCase(Locale.ROOT);
-        if (account.length() > Settings.IMP.MAIN.MAX_NICKNAME_LENGTH) {
+        String account = message.substring(desiredLength).toLowerCase(Locale.ROOT);
+        if (!this.nicknamePattern.matcher(account).matches()) {
           return;
         }
 
@@ -371,6 +379,8 @@ public class Addon {
     this.dao = DaoManager.createDao(source, SocialPlayer.class);
 
     this.plugin.migrateDb(this.dao);
+
+    this.nicknamePattern = Pattern.compile(net.elytrium.limboauth.Settings.IMP.MAIN.ALLOWED_NICKNAME_REGEX);
 
     this.server.getEventManager().register(this, new LimboAuthListener(this.dao, this.socialManager, this.keyboard));
 

@@ -39,7 +39,6 @@ public class Settings extends Config {
     public String SOCIAL_LINK_CMD = "!account link";
     public String FORCE_KEYBOARD_CMD = "!keyboard";
 
-    public int MAX_NICKNAME_LENGTH = 32;
     public int CODE_LOWER_BOUND = 1000000;
     public int CODE_UPPER_BOUND = 10000000;
 
