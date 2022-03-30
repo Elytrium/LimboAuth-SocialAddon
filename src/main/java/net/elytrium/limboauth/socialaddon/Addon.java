@@ -359,8 +359,10 @@ public class Addon {
         }
 
         SocialPlayer player = socialPlayerList.get(0);
+
         this.dao.delete(player);
 
+        this.socialManager.unregisterHook(dbField, player);
         this.socialManager.broadcastMessage(dbField, id, Settings.IMP.MAIN.STRINGS.UNLINK_SUCCESS);
       } catch (SQLException e) {
         e.printStackTrace();

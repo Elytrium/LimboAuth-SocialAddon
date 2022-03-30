@@ -74,6 +74,27 @@ public class SocialManager {
     });
   }
 
+  public void unregisterHook(SocialPlayer player) {
+    this.socialList.stream()
+        .filter(AbstractSocial::isEnabled)
+        .filter(e -> e.canSend(player))
+        .forEach(e -> e.onPlayerRemoved(player));
+  }
+
+  public void unregisterHook(String dbField, SocialPlayer player) {
+    this.socialList.stream()
+        .filter(AbstractSocial::isEnabled)
+        .filter(e -> e.canSend(player))
+        .filter(e -> e.getDbField().equals(dbField))
+        .forEach(e -> e.onPlayerRemoved(player));
+  }
+
+  public void registerHook(String dbField, Long id) {
+    this.socialList.stream()
+        .filter(e -> e.getDbField().equals(dbField))
+        .forEach(e -> e.onPlayerAdded(id));
+  }
+
   public void broadcastMessage(SocialPlayer player, String message, List<List<AbstractSocial.ButtonItem>> item) {
     this.socialList.stream()
         .filter(AbstractSocial::isEnabled)
@@ -89,10 +110,14 @@ public class SocialManager {
   }
 
   public void broadcastMessage(String dbField, Long id, String message, List<List<AbstractSocial.ButtonItem>> item) {
-    this.socialList.stream().filter(e -> e.getDbField().equals(dbField)).forEach(e -> e.sendMessage(id, message, item));
+    this.socialList.stream()
+        .filter(e -> e.getDbField().equals(dbField))
+        .forEach(e -> e.sendMessage(id, message, item));
   }
 
   public void broadcastMessage(String dbField, Long id, String message) {
-    this.socialList.stream().filter(e -> e.getDbField().equals(dbField)).forEach(e -> e.sendMessage(id, message));
+    this.socialList.stream()
+        .filter(e -> e.getDbField().equals(dbField))
+        .forEach(e -> e.sendMessage(id, message));
   }
 }

@@ -63,6 +63,14 @@ public class Settings extends Config {
     public static class DISCORD {
       public boolean ENABLED = false;
       public String TOKEN = "1234567890";
+
+      @Comment({
+          "Available: ",
+          "addrole <role id>",
+          "remrole <role id>"
+      })
+      public List<String> ON_PLAYER_ADDED = List.of();
+      public List<String> ON_PLAYER_REMOVED = List.of();
     }
 
     @Create

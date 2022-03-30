@@ -122,7 +122,11 @@ public class LimboAuthListener {
   @Subscribe
   public void onUnregister(AuthUnregisterEvent event) {
     try {
-      this.socialPlayerDao.deleteById(event.getNickname().toLowerCase(Locale.ROOT));
+      SocialPlayer player = this.socialPlayerDao.queryForId(event.getNickname().toLowerCase(Locale.ROOT));
+      if (player != null) {
+        this.socialManager.unregisterHook(player);
+        this.socialPlayerDao.delete(player);
+      }
     } catch (SQLException e) {
       e.printStackTrace();
     }

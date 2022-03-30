@@ -72,6 +72,16 @@ public class VKSocial extends AbstractSocial {
   }
 
   @Override
+  public void onPlayerAdded(Long id) {
+
+  }
+
+  @Override
+  public void onPlayerRemoved(SocialPlayer player) {
+
+  }
+
+  @Override
   public void sendMessage(Long id, String content, List<List<ButtonItem>> buttons) {
     List<List<Button>> vkButtons = buttons.stream().map(row -> row.stream().map(button -> {
       Button.Color color;

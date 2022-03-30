@@ -22,6 +22,7 @@ import java.util.stream.Collectors;
 import javax.security.auth.login.LoginException;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
+import net.dv8tion.jda.api.entities.Role;
 import net.dv8tion.jda.api.entities.User;
 import net.dv8tion.jda.api.events.interaction.component.ButtonInteractionEvent;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
@@ -30,6 +31,7 @@ import net.dv8tion.jda.api.interactions.components.ActionRow;
 import net.dv8tion.jda.api.interactions.components.buttons.Button;
 import net.dv8tion.jda.api.interactions.components.buttons.ButtonStyle;
 import net.dv8tion.jda.api.requests.GatewayIntent;
+import net.dv8tion.jda.api.utils.cache.CacheFlag;
 import net.elytrium.limboauth.socialaddon.Settings;
 import net.elytrium.limboauth.socialaddon.model.SocialPlayer;
 import org.jetbrains.annotations.NotNull;
@@ -50,7 +52,11 @@ public class DiscordSocial extends AbstractSocial {
   @Override
   public void init() throws SocialInitializationException {
     try {
-      this.jda = JDABuilder.create(Settings.IMP.MAIN.DISCORD.TOKEN, GatewayIntent.DIRECT_MESSAGES).build();
+      this.jda = JDABuilder
+          .create(Settings.IMP.MAIN.DISCORD.TOKEN, GatewayIntent.DIRECT_MESSAGES)
+          .disableCache(CacheFlag.ACTIVITY, CacheFlag.VOICE_STATE, CacheFlag.EMOTE, CacheFlag.CLIENT_STATUS, CacheFlag.ONLINE_STATUS)
+          .build();
+
       this.jda.addEventListener(new Listener(this::proceedMessage, this::proceedButton));
     } catch (LoginException e) {
       throw new SocialInitializationException(e);
@@ -60,6 +66,41 @@ public class DiscordSocial extends AbstractSocial {
   @Override
   public String getDbField() {
     return SocialPlayer.DISCORD_DB_FIELD;
+  }
+
+  @Override
+  public void onPlayerAdded(Long id) {
+    this.parseCommands(id, Settings.IMP.MAIN.DISCORD.ON_PLAYER_ADDED);
+  }
+
+  @Override
+  public void onPlayerRemoved(SocialPlayer player) {
+    this.parseCommands(player.getDiscordID(), Settings.IMP.MAIN.DISCORD.ON_PLAYER_REMOVED);
+  }
+
+  @SuppressWarnings("ConstantConditions")
+  private void parseCommands(Long id, List<String> commands) {
+    for (String argsString : commands) {
+      String[] args = argsString.split(" ");
+      String command = args[0];
+      switch (command) {
+        case "addrole": {
+          long roleId = Long.parseLong(args[1]);
+          Role role = this.jda.getRoleById(roleId);
+          role.getGuild().addRoleToMember(id, role).queue();
+          break;
+        }
+        case "remrole": {
+          long roleId = Long.parseLong(args[1]);
+          Role role = this.jda.getRoleById(roleId);
+          role.getGuild().removeRoleFromMember(id, role).queue();
+          break;
+        }
+        default: {
+          break;
+        }
+      }
+    }
   }
 
   @Override

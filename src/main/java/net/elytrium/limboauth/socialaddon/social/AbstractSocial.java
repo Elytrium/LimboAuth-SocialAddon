@@ -45,6 +45,10 @@ public abstract class AbstractSocial {
 
   public abstract String getDbField();
 
+  public abstract void onPlayerAdded(Long id);
+
+  public abstract void onPlayerRemoved(SocialPlayer player);
+
   public void sendMessage(Long id, String content) {
     this.sendMessage(id, content, Collections.emptyList());
   }
