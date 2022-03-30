@@ -47,6 +47,9 @@ public class Settings extends Config {
 
     public boolean ENABLE_NOTIFY = true;
 
+    @Comment("Will the unlink button unregister all socials at once?")
+    public boolean UNLINK_BTN_ALL = false;
+
     public List<String> AFTER_LINKAGE_COMMANDS = List.of("alert {NICKNAME} ({UUID}) has linked a social account");
 
     @Create

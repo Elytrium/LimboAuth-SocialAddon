@@ -360,9 +360,18 @@ public class Addon {
 
         SocialPlayer player = socialPlayerList.get(0);
 
-        this.dao.delete(player);
+        if (Settings.IMP.MAIN.UNLINK_BTN_ALL) {
+          this.dao.delete(player);
+          this.socialManager.unregisterHook(player);
+        } else {
+          UpdateBuilder<SocialPlayer, String> updateBuilder = this.dao.updateBuilder();
+          updateBuilder.where().eq(SocialPlayer.LOWERCASE_NICKNAME_FIELD, player.getLowercaseNickname());
+          updateBuilder.updateColumnValue(dbField, null);
+          updateBuilder.update();
 
-        this.socialManager.unregisterHook(dbField, player);
+          this.socialManager.unregisterHook(dbField, player);
+        }
+
         this.socialManager.broadcastMessage(dbField, id, Settings.IMP.MAIN.STRINGS.UNLINK_SUCCESS);
       } catch (SQLException e) {
         e.printStackTrace();
