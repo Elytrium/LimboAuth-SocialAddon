@@ -313,9 +313,11 @@ public class Addon {
         if (proxyPlayer.isPresent()) {
           this.plugin.removePlayerFromCache(player.getLowercaseNickname());
           proxyPlayer.get().disconnect(LegacyComponentSerializer.legacyAmpersand().deserialize(Settings.IMP.MAIN.STRINGS.KICK_GAME_MESSAGE));
-          this.socialManager.broadcastMessage(dbField, id, Settings.IMP.MAIN.STRINGS.KICK_SUCCESS, this.keyboard);
+          this.socialManager.broadcastMessage(dbField, id,
+              Settings.IMP.MAIN.STRINGS.KICK_SUCCESS.replace("{NICKNAME}", player.getLowercaseNickname()), this.keyboard);
         } else {
-          this.socialManager.broadcastMessage(dbField, id, Settings.IMP.MAIN.STRINGS.KICK_IS_OFFLINE, this.keyboard);
+          this.socialManager.broadcastMessage(dbField, id,
+              Settings.IMP.MAIN.STRINGS.KICK_IS_OFFLINE.replace("{NICKNAME}", player.getLowercaseNickname()), this.keyboard);
         }
 
         this.dao.update(player);
