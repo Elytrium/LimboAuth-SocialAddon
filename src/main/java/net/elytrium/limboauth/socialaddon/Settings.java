@@ -50,6 +50,9 @@ public class Settings extends Config {
     @Comment("Will the unlink button unregister all socials at once?")
     public boolean UNLINK_BTN_ALL = false;
 
+    @Comment("Disable unlinking?")
+    public boolean DISABLE_UNLINK = false;
+
     public List<String> AFTER_LINKAGE_COMMANDS = List.of("alert {NICKNAME} ({UUID}) has linked a social account");
 
     @Create
@@ -166,6 +169,7 @@ public class Settings extends Config {
       public String TOGGLE_2FA_BTN = "Toggle 2FA";
       public String UNLINK_BTN = "Unlink social";
       public String UNLINK_SUCCESS = "Unlink successful";
+      public String UNLINK_DISABLED = "Unlinking disabled";
       public String UNLINK_BLOCK_CONFLICT = "You cannot unlink the social while your account is blocked. Unblock it first";
 
       public String KEYBOARD_RESTORED = "Keyboard was restored";
