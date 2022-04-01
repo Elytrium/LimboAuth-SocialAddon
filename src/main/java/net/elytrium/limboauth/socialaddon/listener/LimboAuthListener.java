@@ -21,12 +21,6 @@ import com.velocitypowered.api.event.Subscribe;
 import com.velocitypowered.api.event.connection.DisconnectEvent;
 import com.velocitypowered.api.event.player.PlayerChooseInitialServerEvent;
 import com.velocitypowered.api.proxy.Player;
-import java.sql.SQLException;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Locale;
 import net.elytrium.limboauth.event.AuthUnregisterEvent;
 import net.elytrium.limboauth.event.PostAuthorizationEvent;
 import net.elytrium.limboauth.event.PreAuthorizationEvent;
@@ -35,9 +29,13 @@ import net.elytrium.limboauth.socialaddon.Settings;
 import net.elytrium.limboauth.socialaddon.SocialManager;
 import net.elytrium.limboauth.socialaddon.model.SocialPlayer;
 import net.elytrium.limboauth.socialaddon.social.AbstractSocial;
+import net.elytrium.limboauth.socialaddon.utils.GeoIp;
 import net.elytrium.limboauth.thirdparty.com.j256.ormlite.dao.Dao;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
+
+import java.sql.SQLException;
+import java.util.*;
 
 public class LimboAuthListener {
 
@@ -54,10 +52,13 @@ public class LimboAuthListener {
   private final List<List<AbstractSocial.ButtonItem>> keyboard;
   private final HashMap<String, PostAuthorizationEvent> sessions = new HashMap<>();
 
-  public LimboAuthListener(Dao<SocialPlayer, String> socialPlayerDao, SocialManager socialManager, List<List<AbstractSocial.ButtonItem>> keyboard) {
+  private final GeoIp geoIp;
+
+  public LimboAuthListener(Dao<SocialPlayer, String> socialPlayerDao, SocialManager socialManager, List<List<AbstractSocial.ButtonItem>> keyboard, GeoIp geoIp) {
     this.socialPlayerDao = socialPlayerDao;
     this.socialManager = socialManager;
     this.keyboard = keyboard;
+    this.geoIp = geoIp;
     this.yesNoButtons = Collections.singletonList(
         Arrays.asList(
             new AbstractSocial.ButtonItem(ASK_NO_BTN, Settings.IMP.MAIN.STRINGS.NOTIFY_ASK_NO, AbstractSocial.ButtonItem.Color.RED),
@@ -94,7 +95,9 @@ public class LimboAuthListener {
       this.sessions.put(player.getLowercaseNickname(), event);
 
       String ip = proxyPlayer.getRemoteAddress().getAddress().getHostAddress();
-      this.socialManager.broadcastMessage(player, Settings.IMP.MAIN.STRINGS.NOTIFY_ASK_VALIDATE.replace("{IP}", ip), this.yesNoButtons);
+      this.socialManager.broadcastMessage(player, Settings.IMP.MAIN.STRINGS.NOTIFY_ASK_VALIDATE
+          .replace("{IP}", ip).replace("{LOCATION}", Optional.ofNullable(geoIp)
+              .map(nonNullGeo -> "(" + nonNullGeo.getLocation(ip) + ")").orElse("")), this.yesNoButtons);
     }
   }
 
@@ -103,7 +106,9 @@ public class LimboAuthListener {
     SocialPlayer player = this.queryPlayer(event.getPlayer());
     if (player != null && Settings.IMP.MAIN.ENABLE_NOTIFY && player.isNotifyEnabled()) {
       String ip = event.getPlayer().getRemoteAddress().getAddress().getHostAddress();
-      this.socialManager.broadcastMessage(player, Settings.IMP.MAIN.STRINGS.NOTIFY_JOIN.replace("{IP}", ip), this.keyboard);
+      this.socialManager.broadcastMessage(player, Settings.IMP.MAIN.STRINGS.NOTIFY_JOIN.replace("{IP}", ip)
+          .replace("{LOCATION}", Optional.ofNullable(geoIp)
+              .map(nonNullGeo -> "(" + nonNullGeo.getLocation(ip) + ")").orElse("")), this.keyboard);
     }
   }
 

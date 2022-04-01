@@ -17,9 +17,10 @@
 
 package net.elytrium.limboauth.socialaddon;
 
+import net.elytrium.limboauth.config.Config;
+
 import java.io.File;
 import java.util.List;
-import net.elytrium.limboauth.config.Config;
 
 public class Settings extends Config {
 
@@ -87,6 +88,36 @@ public class Settings extends Config {
     @Create
     public MAIN.STRINGS STRINGS;
 
+    @Comment({
+        "GeoIP is an offline database providing approximate IP address locations",
+        "In the SocialAddon's case, the IP location is displayed in notifications and alerts"
+    })
+    public static class GEOIP {
+      public boolean ENABLED = false;
+      @Comment({
+          "Available: city, country",
+          "City precision will involve both the country and the city displayed",
+          "Country will involve only the country to be displayed"
+      })
+      public String PRECISION = "country";
+      @Comment("ISO 639-1")
+      public String LOCALE = "en";
+      @Comment({
+          "MaxMind license key",
+          "Regenerate if triggers an error"
+      })
+      public String LICENSE_KEY = "P5g0fVdAQIq8yQau";
+      @Comment({
+          "The interval at which the database will be updated, in milliseconds",
+          "Default value: 14 days"
+      })
+      public long UPDATE_INTERVAL = 1209600000L;
+      public String DEFAULT_VALUE = "Unknown";
+    }
+
+    @Create
+    public MAIN.GEOIP GEOIP;
+
     public static class STRINGS {
 
       public String LINK_CMD_USAGE = "{PRFX} Send '!account link {NICKNAME}' to our Social Bot{NL} VK: vk.com/123{NL} DS: Bot#0000{NL} TG: @bot";
@@ -96,10 +127,10 @@ public class Settings extends Config {
       public String LINK_CODE = "🔑 Enter '/addsocial {CODE}' in game to complete account linking";
 
       public String NOTIFY_LEAVE = "➖ You've left the server";
-      public String NOTIFY_JOIN = "➕ You've joined the server {NL}🌐 IP: {IP}{NL}You can block your account if that is not you";
+      public String NOTIFY_JOIN = "➕ You've joined the server {NL}🌐 IP: {IP} {LOCATION}{NL}You can block your account if that is not you";
 
       public String NOTIFY_ASK_KICK_MESSAGE = "{PRFX} You were kicked by the Social";
-      public String NOTIFY_ASK_VALIDATE = "❔ Someone tries to join the server.{NL}🌐 IP: {IP}{NL}Is it you?";
+      public String NOTIFY_ASK_VALIDATE = "❔ Someone tries to join the server.{NL}🌐 IP: {IP} {LOCATION}{NL}Is it you?";
       public String NOTIFY_ASK_YES = "It's me";
       public String NOTIFY_ASK_NO = "It's not me";
 
@@ -122,7 +153,7 @@ public class Settings extends Config {
       public String RESTORE_MSG = "The new password for {NICKNAME} is: {PASSWORD}";
 
       public String INFO_BTN = "Info";
-      public String INFO_MSG = "👤 IGN: {NICKNAME}{NL}🌍 Current status: {SERVER}{NL}🌐 IP: {IP}{NL}⏰ Notifications: {NOTIFY_STATUS}{NL}❌ Blocked: {BLOCK_STATUS}{NL}🔑 2FA: {TOTP_STATUS}";
+      public String INFO_MSG = "👤 IGN: {NICKNAME}{NL}🌍 Current status: {SERVER}{NL}🌐 IP: {IP} {LOCATION}{NL}⏰ Notifications: {NOTIFY_STATUS}{NL}❌ Blocked: {BLOCK_STATUS}{NL}🔑 2FA: {TOTP_STATUS}";
       public String STATUS_OFFLINE = "OFFLINE";
       public String NOTIFY_ENABLED = "Enabled";
       public String NOTIFY_DISABLED = "Disabled";

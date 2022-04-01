@@ -29,16 +29,6 @@ import com.velocitypowered.api.plugin.annotation.DataDirectory;
 import com.velocitypowered.api.proxy.Player;
 import com.velocitypowered.api.proxy.ProxyServer;
 import com.velocitypowered.api.proxy.ServerConnection;
-import java.io.File;
-import java.nio.file.Path;
-import java.sql.SQLException;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.concurrent.ThreadLocalRandom;
-import java.util.regex.Pattern;
 import net.elytrium.limboauth.LimboAuth;
 import net.elytrium.limboauth.event.AuthPluginReloadEvent;
 import net.elytrium.limboauth.handler.AuthSessionHandler;
@@ -50,6 +40,7 @@ import net.elytrium.limboauth.socialaddon.social.AbstractSocial;
 import net.elytrium.limboauth.socialaddon.social.DiscordSocial;
 import net.elytrium.limboauth.socialaddon.social.TelegramSocial;
 import net.elytrium.limboauth.socialaddon.social.VKSocial;
+import net.elytrium.limboauth.socialaddon.utils.GeoIp;
 import net.elytrium.limboauth.socialaddon.utils.UpdatesChecker;
 import net.elytrium.limboauth.thirdparty.com.j256.ormlite.dao.Dao;
 import net.elytrium.limboauth.thirdparty.com.j256.ormlite.dao.DaoManager;
@@ -59,6 +50,13 @@ import net.elytrium.limboauth.thirdparty.com.j256.ormlite.table.TableUtils;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import org.bstats.velocity.Metrics;
 import org.slf4j.Logger;
+
+import java.io.File;
+import java.nio.file.Path;
+import java.sql.SQLException;
+import java.util.*;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.regex.Pattern;
 
 @Plugin(
     id = "limboauth-social-addon",
@@ -94,6 +92,7 @@ public class Addon {
   private Pattern nicknamePattern;
 
   private List<List<AbstractSocial.ButtonItem>> keyboard;
+  private GeoIp geoIp;
 
   static {
     Objects.requireNonNull(org.apache.commons.logging.impl.LogFactoryImpl.class);
@@ -210,12 +209,14 @@ public class Addon {
         }
 
         this.socialManager.broadcastMessage(dbField, id, Settings.IMP.MAIN.STRINGS.INFO_MSG
-            .replace("{NICKNAME}", player.getLowercaseNickname())
-            .replace("{SERVER}", server)
-            .replace("{IP}", ip)
-            .replace("{NOTIFY_STATUS}", player.isNotifyEnabled() ? Settings.IMP.MAIN.STRINGS.NOTIFY_ENABLED : Settings.IMP.MAIN.STRINGS.NOTIFY_DISABLED)
-            .replace("{BLOCK_STATUS}", player.isBlocked() ? Settings.IMP.MAIN.STRINGS.BLOCK_ENABLED : Settings.IMP.MAIN.STRINGS.BLOCK_DISABLED)
-            .replace("{TOTP_STATUS}", player.isTotpEnabled() ? Settings.IMP.MAIN.STRINGS.TOTP_ENABLED : Settings.IMP.MAIN.STRINGS.TOTP_DISABLED),
+                .replace("{NICKNAME}", player.getLowercaseNickname())
+                .replace("{SERVER}", server)
+                .replace("{IP}", ip)
+                .replace("{LOACTION}", Optional.ofNullable(geoIp)
+                    .map(nonNullGeo -> "(" + nonNullGeo.getLocation(ip) + ")").orElse(""))
+                .replace("{NOTIFY_STATUS}", player.isNotifyEnabled() ? Settings.IMP.MAIN.STRINGS.NOTIFY_ENABLED : Settings.IMP.MAIN.STRINGS.NOTIFY_DISABLED)
+                .replace("{BLOCK_STATUS}", player.isBlocked() ? Settings.IMP.MAIN.STRINGS.BLOCK_ENABLED : Settings.IMP.MAIN.STRINGS.BLOCK_DISABLED)
+                .replace("{TOTP_STATUS}", player.isTotpEnabled() ? Settings.IMP.MAIN.STRINGS.TOTP_ENABLED : Settings.IMP.MAIN.STRINGS.TOTP_DISABLED),
             this.keyboard);
       } catch (SQLException e) {
         e.printStackTrace();
@@ -407,7 +408,9 @@ public class Addon {
 
     this.nicknamePattern = Pattern.compile(net.elytrium.limboauth.Settings.IMP.MAIN.ALLOWED_NICKNAME_REGEX);
 
-    this.server.getEventManager().register(this, new LimboAuthListener(this.dao, this.socialManager, this.keyboard));
+    geoIp = Settings.IMP.MAIN.GEOIP.ENABLED ? new GeoIp(dataDirectory) : null;
+    this.server.getEventManager().register(this, new LimboAuthListener(this.dao, this.socialManager,
+        this.keyboard, geoIp));
 
     CommandManager commandManager = this.server.getCommandManager();
     commandManager.unregister(Settings.IMP.MAIN.LINKAGE_MAIN_CMD);
