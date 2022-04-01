@@ -23,18 +23,17 @@ import com.maxmind.geoip2.exception.GeoIp2Exception;
 import com.maxmind.geoip2.model.CityResponse;
 import com.maxmind.geoip2.model.CountryResponse;
 import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.InetAddress;
+import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
 import java.util.zip.GZIPInputStream;
 import net.elytrium.limboauth.socialaddon.Settings;
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
+import org.apache.commons.io.IOUtils;
 
 public class GeoIp {
 
@@ -71,16 +70,24 @@ public class GeoIp {
   private void downloadDatabase() throws Exception {
     String uri = String.format(Settings.IMP.MAIN.GEOIP.PRECISION.equalsIgnoreCase("city")
         ? GEOIP_CITY_DOWNLOAD : GEOIP_COUNTRY_DOWNLOAD, Settings.IMP.MAIN.GEOIP.LICENSE_KEY);
-    ByteArrayOutputStream byteOutputStream = new ByteArrayOutputStream();
-    Files.copy(Paths.get(uri), byteOutputStream);
 
-    try (GZIPInputStream gzip = new GZIPInputStream(new ByteArrayInputStream(byteOutputStream.toByteArray()));
+    ByteArrayInputStream byteStream = new ByteArrayInputStream(IOUtils.toByteArray(new URL(uri).openStream()));
+    try (GZIPInputStream gzip = new GZIPInputStream(byteStream);
          TarArchiveInputStream tarInputStream = new TarArchiveInputStream(gzip)) {
       TarArchiveEntry entry;
+      byte[] b = new byte[4096];
       while ((entry = tarInputStream.getNextTarEntry()) != null) {
         if (entry.getName().endsWith("mmdb")) {
-          Files.copy(new FileInputStream(entry.getFile()), this.dataPath.resolve("geo.mmdb"),
-              StandardCopyOption.REPLACE_EXISTING);
+          Path path = this.dataPath.resolve("geo.mmdb");
+          Files.deleteIfExists(path);
+
+          try (FileOutputStream fos = new FileOutputStream(path.toFile())) {
+            int r;
+            while ((r = tarInputStream.read(b)) != -1) {
+              fos.write(b, 0, r);
+            }
+          }
+
         }
       }
     }
