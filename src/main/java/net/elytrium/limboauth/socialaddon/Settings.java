@@ -17,10 +17,9 @@
 
 package net.elytrium.limboauth.socialaddon;
 
-import net.elytrium.limboauth.config.Config;
-
 import java.io.File;
 import java.util.List;
+import net.elytrium.limboauth.config.Config;
 
 public class Settings extends Config {
 

@@ -1,3 +1,20 @@
+/*
+ * Copyright (C) 2022 Elytrium
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
 package net.elytrium.limboauth.socialaddon.utils;
 
 import com.maxmind.db.CHMCache;
@@ -5,10 +22,6 @@ import com.maxmind.geoip2.DatabaseReader;
 import com.maxmind.geoip2.exception.GeoIp2Exception;
 import com.maxmind.geoip2.model.CityResponse;
 import com.maxmind.geoip2.model.CountryResponse;
-import net.elytrium.limboauth.socialaddon.Settings;
-import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
-import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
-
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.FileInputStream;
@@ -19,13 +32,16 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.zip.GZIPInputStream;
+import net.elytrium.limboauth.socialaddon.Settings;
+import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
+import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
 
 public class GeoIp {
 
-  private static final String GEOIP_CITY_DOWNLOAD = "https://download.maxmind.com/app/geoip_download" +
-      "?edition_id=GeoLite2-City&license_key=%s&suffix=tar.gz";
-  private static final String GEOIP_COUNTRY_DOWNLOAD = "https://download.maxmind.com/app/geoip_download" +
-      "?edition_id=GeoLite2-Country&license_key=%s&suffix=tar.gz";
+  private static final String GEOIP_CITY_DOWNLOAD = "https://download.maxmind.com/app/geoip_download"
+      + "?edition_id=GeoLite2-City&license_key=%s&suffix=tar.gz";
+  private static final String GEOIP_COUNTRY_DOWNLOAD = "https://download.maxmind.com/app/geoip_download"
+      + "?edition_id=GeoLite2-Country&license_key=%s&suffix=tar.gz";
   private final Path dataPath;
 
   private DatabaseReader reader;
@@ -34,20 +50,22 @@ public class GeoIp {
     this.dataPath = dataPath;
 
     try {
-      initialiseGeoIp();
+      this.initialiseGeoIp();
     } catch (Exception e) {
       e.printStackTrace();
     }
   }
 
   private void initialiseGeoIp() throws Exception {
-    Path path = dataPath.resolve("geo.mmdb");
-    if (!Files.exists(path))
-      downloadDatabase();
-    if ((System.currentTimeMillis() - path.toFile().lastModified()) > Settings.IMP.MAIN.GEOIP.UPDATE_INTERVAL)
-      downloadDatabase();
+    Path path = this.dataPath.resolve("geo.mmdb");
+    if (!Files.exists(path)) {
+      this.downloadDatabase();
+    }
+    if ((System.currentTimeMillis() - path.toFile().lastModified()) > Settings.IMP.MAIN.GEOIP.UPDATE_INTERVAL) {
+      this.downloadDatabase();
+    }
 
-    reader = new DatabaseReader.Builder(path.toFile()).withCache(new CHMCache(4096 * 4)).build();
+    this.reader = new DatabaseReader.Builder(path.toFile()).withCache(new CHMCache(4096 * 4)).build();
   }
 
   private void downloadDatabase() throws Exception {
@@ -61,7 +79,7 @@ public class GeoIp {
       TarArchiveEntry entry;
       while ((entry = tarInputStream.getNextTarEntry()) != null) {
         if (entry.getName().endsWith("mmdb")) {
-          Files.copy(new FileInputStream(entry.getFile()), dataPath.resolve("geo.mmdb"),
+          Files.copy(new FileInputStream(entry.getFile()), this.dataPath.resolve("geo.mmdb"),
               StandardCopyOption.REPLACE_EXISTING);
         }
       }
@@ -72,11 +90,11 @@ public class GeoIp {
     try {
       InetAddress address = InetAddress.getByName(ip);
       if (Settings.IMP.MAIN.GEOIP.PRECISION.equalsIgnoreCase("city")) {
-        CityResponse response = reader.city(address);
+        CityResponse response = this.reader.city(address);
         return response.getCity().getNames().getOrDefault(Settings.IMP.MAIN.GEOIP.LOCALE, Settings.IMP.MAIN.GEOIP.DEFAULT_VALUE)
             + ", " + response.getCountry().getNames().getOrDefault(Settings.IMP.MAIN.GEOIP.LOCALE, Settings.IMP.MAIN.GEOIP.DEFAULT_VALUE);
       } else {
-        CountryResponse response = reader.country(address);
+        CountryResponse response = this.reader.country(address);
         return response.getCountry().getNames().getOrDefault(Settings.IMP.MAIN.GEOIP.LOCALE, Settings.IMP.MAIN.GEOIP.DEFAULT_VALUE);
       }
     } catch (IOException | GeoIp2Exception e) {

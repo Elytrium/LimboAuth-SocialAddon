@@ -29,6 +29,16 @@ import com.velocitypowered.api.plugin.annotation.DataDirectory;
 import com.velocitypowered.api.proxy.Player;
 import com.velocitypowered.api.proxy.ProxyServer;
 import com.velocitypowered.api.proxy.ServerConnection;
+import java.io.File;
+import java.nio.file.Path;
+import java.sql.SQLException;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.regex.Pattern;
 import net.elytrium.limboauth.LimboAuth;
 import net.elytrium.limboauth.event.AuthPluginReloadEvent;
 import net.elytrium.limboauth.handler.AuthSessionHandler;
@@ -50,13 +60,6 @@ import net.elytrium.limboauth.thirdparty.com.j256.ormlite.table.TableUtils;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import org.bstats.velocity.Metrics;
 import org.slf4j.Logger;
-
-import java.io.File;
-import java.nio.file.Path;
-import java.sql.SQLException;
-import java.util.*;
-import java.util.concurrent.ThreadLocalRandom;
-import java.util.regex.Pattern;
 
 @Plugin(
     id = "limboauth-social-addon",
@@ -212,9 +215,10 @@ public class Addon {
                 .replace("{NICKNAME}", player.getLowercaseNickname())
                 .replace("{SERVER}", server)
                 .replace("{IP}", ip)
-                .replace("{LOCATION}", Optional.ofNullable(geoIp)
+                .replace("{LOCATION}", Optional.ofNullable(this.geoIp)
                     .map(nonNullGeo -> "(" + nonNullGeo.getLocation(ip) + ")").orElse(""))
-                .replace("{NOTIFY_STATUS}", player.isNotifyEnabled() ? Settings.IMP.MAIN.STRINGS.NOTIFY_ENABLED : Settings.IMP.MAIN.STRINGS.NOTIFY_DISABLED)
+                .replace("{NOTIFY_STATUS}", player.isNotifyEnabled()
+                    ? Settings.IMP.MAIN.STRINGS.NOTIFY_ENABLED : Settings.IMP.MAIN.STRINGS.NOTIFY_DISABLED)
                 .replace("{BLOCK_STATUS}", player.isBlocked() ? Settings.IMP.MAIN.STRINGS.BLOCK_ENABLED : Settings.IMP.MAIN.STRINGS.BLOCK_DISABLED)
                 .replace("{TOTP_STATUS}", player.isTotpEnabled() ? Settings.IMP.MAIN.STRINGS.TOTP_ENABLED : Settings.IMP.MAIN.STRINGS.TOTP_DISABLED),
             this.keyboard);
@@ -408,9 +412,9 @@ public class Addon {
 
     this.nicknamePattern = Pattern.compile(net.elytrium.limboauth.Settings.IMP.MAIN.ALLOWED_NICKNAME_REGEX);
 
-    geoIp = Settings.IMP.MAIN.GEOIP.ENABLED ? new GeoIp(dataDirectory) : null;
+    this.geoIp = Settings.IMP.MAIN.GEOIP.ENABLED ? new GeoIp(this.dataDirectory) : null;
     this.server.getEventManager().register(this, new LimboAuthListener(this.dao, this.socialManager,
-        this.keyboard, geoIp));
+        this.keyboard, this.geoIp));
 
     CommandManager commandManager = this.server.getCommandManager();
     commandManager.unregister(Settings.IMP.MAIN.LINKAGE_MAIN_CMD);
