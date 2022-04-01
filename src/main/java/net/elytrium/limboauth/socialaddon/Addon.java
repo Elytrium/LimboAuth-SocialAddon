@@ -212,7 +212,7 @@ public class Addon {
                 .replace("{NICKNAME}", player.getLowercaseNickname())
                 .replace("{SERVER}", server)
                 .replace("{IP}", ip)
-                .replace("{LOACTION}", Optional.ofNullable(geoIp)
+                .replace("{LOCATION}", Optional.ofNullable(geoIp)
                     .map(nonNullGeo -> "(" + nonNullGeo.getLocation(ip) + ")").orElse(""))
                 .replace("{NOTIFY_STATUS}", player.isNotifyEnabled() ? Settings.IMP.MAIN.STRINGS.NOTIFY_ENABLED : Settings.IMP.MAIN.STRINGS.NOTIFY_DISABLED)
                 .replace("{BLOCK_STATUS}", player.isBlocked() ? Settings.IMP.MAIN.STRINGS.BLOCK_ENABLED : Settings.IMP.MAIN.STRINGS.BLOCK_DISABLED)
