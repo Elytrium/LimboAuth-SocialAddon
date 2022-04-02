@@ -367,7 +367,7 @@ public class Addon {
     this.socialManager.addButtonEvent(UNLINK_BTN, (dbField, id) -> {
       try {
         if (Settings.IMP.MAIN.DISABLE_UNLINK) {
-          this.socialManager.broadcastMessage(dbField, id, Settings.IMP.MAIN.STRINGS.UNLINK_DISABLED);
+          this.socialManager.broadcastMessage(dbField, id, Settings.IMP.MAIN.STRINGS.UNLINK_DISABLED, this.keyboard);
           return;
         }
         List<SocialPlayer> socialPlayerList = this.dao.queryForEq(dbField, id);
