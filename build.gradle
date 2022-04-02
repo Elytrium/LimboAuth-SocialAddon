@@ -51,6 +51,9 @@ dependencies {
 
     implementation("org.bstats:bstats-velocity:2.2.1")
     compileOnly("com.github.spotbugs:spotbugs-annotations:4.5.3")
+
+    implementation("com.maxmind.geoip2:geoip2:3.0.1")
+    implementation("org.apache.commons:commons-compress:1.21")
 }
 
 shadowJar {

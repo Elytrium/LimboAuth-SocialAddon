@@ -50,6 +50,7 @@ import net.elytrium.limboauth.socialaddon.social.AbstractSocial;
 import net.elytrium.limboauth.socialaddon.social.DiscordSocial;
 import net.elytrium.limboauth.socialaddon.social.TelegramSocial;
 import net.elytrium.limboauth.socialaddon.social.VKSocial;
+import net.elytrium.limboauth.socialaddon.utils.GeoIp;
 import net.elytrium.limboauth.socialaddon.utils.UpdatesChecker;
 import net.elytrium.limboauth.thirdparty.com.j256.ormlite.dao.Dao;
 import net.elytrium.limboauth.thirdparty.com.j256.ormlite.dao.DaoManager;
@@ -94,6 +95,7 @@ public class Addon {
   private Pattern nicknamePattern;
 
   private List<List<AbstractSocial.ButtonItem>> keyboard;
+  private GeoIp geoIp;
 
   static {
     Objects.requireNonNull(org.apache.commons.logging.impl.LogFactoryImpl.class);
@@ -210,12 +212,15 @@ public class Addon {
         }
 
         this.socialManager.broadcastMessage(dbField, id, Settings.IMP.MAIN.STRINGS.INFO_MSG
-            .replace("{NICKNAME}", player.getLowercaseNickname())
-            .replace("{SERVER}", server)
-            .replace("{IP}", ip)
-            .replace("{NOTIFY_STATUS}", player.isNotifyEnabled() ? Settings.IMP.MAIN.STRINGS.NOTIFY_ENABLED : Settings.IMP.MAIN.STRINGS.NOTIFY_DISABLED)
-            .replace("{BLOCK_STATUS}", player.isBlocked() ? Settings.IMP.MAIN.STRINGS.BLOCK_ENABLED : Settings.IMP.MAIN.STRINGS.BLOCK_DISABLED)
-            .replace("{TOTP_STATUS}", player.isTotpEnabled() ? Settings.IMP.MAIN.STRINGS.TOTP_ENABLED : Settings.IMP.MAIN.STRINGS.TOTP_DISABLED),
+                .replace("{NICKNAME}", player.getLowercaseNickname())
+                .replace("{SERVER}", server)
+                .replace("{IP}", ip)
+                .replace("{LOCATION}", Optional.ofNullable(this.geoIp)
+                    .map(nonNullGeo -> "(" + nonNullGeo.getLocation(ip) + ")").orElse(""))
+                .replace("{NOTIFY_STATUS}", player.isNotifyEnabled()
+                    ? Settings.IMP.MAIN.STRINGS.NOTIFY_ENABLED : Settings.IMP.MAIN.STRINGS.NOTIFY_DISABLED)
+                .replace("{BLOCK_STATUS}", player.isBlocked() ? Settings.IMP.MAIN.STRINGS.BLOCK_ENABLED : Settings.IMP.MAIN.STRINGS.BLOCK_DISABLED)
+                .replace("{TOTP_STATUS}", player.isTotpEnabled() ? Settings.IMP.MAIN.STRINGS.TOTP_ENABLED : Settings.IMP.MAIN.STRINGS.TOTP_DISABLED),
             this.keyboard);
       } catch (SQLException e) {
         e.printStackTrace();
@@ -361,6 +366,10 @@ public class Addon {
 
     this.socialManager.addButtonEvent(UNLINK_BTN, (dbField, id) -> {
       try {
+        if (Settings.IMP.MAIN.DISABLE_UNLINK) {
+          this.socialManager.broadcastMessage(dbField, id, Settings.IMP.MAIN.STRINGS.UNLINK_DISABLED, this.keyboard);
+          return;
+        }
         List<SocialPlayer> socialPlayerList = this.dao.queryForEq(dbField, id);
 
         if (socialPlayerList.size() == 0) {
@@ -407,7 +416,9 @@ public class Addon {
 
     this.nicknamePattern = Pattern.compile(net.elytrium.limboauth.Settings.IMP.MAIN.ALLOWED_NICKNAME_REGEX);
 
-    this.server.getEventManager().register(this, new LimboAuthListener(this.dao, this.socialManager, this.keyboard));
+    this.geoIp = Settings.IMP.MAIN.GEOIP.ENABLED ? new GeoIp(this.dataDirectory) : null;
+    this.server.getEventManager().register(this, new LimboAuthListener(this.dao, this.socialManager,
+        this.keyboard, this.geoIp));
 
     CommandManager commandManager = this.server.getCommandManager();
     commandManager.unregister(Settings.IMP.MAIN.LINKAGE_MAIN_CMD);
