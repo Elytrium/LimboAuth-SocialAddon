@@ -194,6 +194,7 @@ public class Addon {
         Optional<Player> proxyPlayer = this.server.getPlayer(player.getLowercaseNickname());
         String server;
         String ip;
+        String location;
 
         if (proxyPlayer.isPresent()) {
           Player player1 = proxyPlayer.get();
@@ -206,17 +207,19 @@ public class Addon {
           }
 
           ip = player1.getRemoteAddress().getAddress().getHostAddress();
+          location = Optional.ofNullable(this.geoIp)
+                  .map(nonNullGeo -> "(" + nonNullGeo.getLocation(ip) + ")").orElse("");
         } else {
           server = Settings.IMP.MAIN.STRINGS.STATUS_OFFLINE;
           ip = Settings.IMP.MAIN.STRINGS.STATUS_OFFLINE;
+          location = "";
         }
 
         this.socialManager.broadcastMessage(dbField, id, Settings.IMP.MAIN.STRINGS.INFO_MSG
                 .replace("{NICKNAME}", player.getLowercaseNickname())
                 .replace("{SERVER}", server)
                 .replace("{IP}", ip)
-                .replace("{LOCATION}", Optional.ofNullable(this.geoIp)
-                    .map(nonNullGeo -> "(" + nonNullGeo.getLocation(ip) + ")").orElse(""))
+                .replace("{LOCATION}", location)
                 .replace("{NOTIFY_STATUS}", player.isNotifyEnabled()
                     ? Settings.IMP.MAIN.STRINGS.NOTIFY_ENABLED : Settings.IMP.MAIN.STRINGS.NOTIFY_DISABLED)
                 .replace("{BLOCK_STATUS}", player.isBlocked() ? Settings.IMP.MAIN.STRINGS.BLOCK_ENABLED : Settings.IMP.MAIN.STRINGS.BLOCK_DISABLED)
