@@ -27,7 +27,6 @@ import api.longpoll.bots.model.objects.additional.buttons.CallbackButton;
 import api.longpoll.bots.model.objects.basic.Message;
 import com.google.gson.JsonObject;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 import net.elytrium.limboauth.socialaddon.Settings;
 import net.elytrium.limboauth.socialaddon.model.SocialPlayer;
@@ -45,25 +44,30 @@ public class VKSocial extends AbstractSocial {
   }
 
   @Override
-  public void init() throws SocialInitializationException {
+  public void init() {
     if (this.bot != null) {
       this.bot.stopPolling();
     }
 
     this.bot = new BotImpl(Settings.IMP.MAIN.VK.TOKEN, this::proceedMessage, this::proceedButton);
-    AtomicReference<VkApiException> ex = new AtomicReference<>();
 
+    this.startPolling();
+  }
+
+  private void startPolling() {
     new Thread(() -> {
       try {
         this.bot.startPolling();
       } catch (VkApiException e) {
-        ex.set(e);
+        e.printStackTrace();
+        try {
+          Thread.sleep(1000);
+        } catch (InterruptedException ex) {
+          ex.printStackTrace();
+        }
+        this.startPolling();
       }
     }).start();
-
-    if (ex.get() != null) {
-      throw new SocialInitializationException(ex.get());
-    }
   }
 
   @Override
