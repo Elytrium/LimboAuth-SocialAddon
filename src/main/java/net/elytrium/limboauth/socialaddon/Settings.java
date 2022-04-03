@@ -174,6 +174,9 @@ public class Settings extends Config {
 
       public String KEYBOARD_RESTORED = "Keyboard was restored";
 
+      @Comment("This message will be sent to the players without social-link right after their login")
+      public String LINK_ANNOUNCEMENT = "{PRFX} Hey! We recommend you to link a social network using the /addsocial command to secure your account";
+
     }
   }
 

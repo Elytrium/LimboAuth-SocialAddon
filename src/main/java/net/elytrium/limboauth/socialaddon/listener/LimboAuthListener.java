@@ -30,6 +30,7 @@ import java.util.Locale;
 import java.util.Optional;
 import net.elytrium.limboauth.event.AuthUnregisterEvent;
 import net.elytrium.limboauth.event.PostAuthorizationEvent;
+import net.elytrium.limboauth.event.PostRegisterEvent;
 import net.elytrium.limboauth.event.PreAuthorizationEvent;
 import net.elytrium.limboauth.event.TaskEvent;
 import net.elytrium.limboauth.socialaddon.Settings;
@@ -103,6 +104,19 @@ public class LimboAuthListener {
       this.socialManager.broadcastMessage(player, Settings.IMP.MAIN.STRINGS.NOTIFY_ASK_VALIDATE
           .replace("{IP}", ip).replace("{LOCATION}", Optional.ofNullable(this.geoIp)
               .map(nonNullGeo -> "(" + nonNullGeo.getLocation(ip) + ")").orElse("")), this.yesNoButtons);
+    }
+
+    if (player == null && !Settings.IMP.MAIN.STRINGS.LINK_ANNOUNCEMENT.isEmpty()) {
+      proxyPlayer.sendMessage(LegacyComponentSerializer.legacyAmpersand().deserialize(Settings.IMP.MAIN.STRINGS.LINK_ANNOUNCEMENT));
+    }
+  }
+
+  @Subscribe
+  public void onRegisterCompleted(PostRegisterEvent event) {
+    if (!Settings.IMP.MAIN.STRINGS.LINK_ANNOUNCEMENT.isEmpty()) {
+      event.getPlayer()
+          .getProxyPlayer()
+          .sendMessage(LegacyComponentSerializer.legacyAmpersand().deserialize(Settings.IMP.MAIN.STRINGS.LINK_ANNOUNCEMENT));
     }
   }
 
