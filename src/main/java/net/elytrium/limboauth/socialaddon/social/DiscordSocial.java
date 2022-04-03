@@ -65,7 +65,9 @@ public class DiscordSocial extends AbstractSocial {
 
   @Override
   public void stop() {
-    this.jda.shutdown();
+    if (this.jda != null) {
+      this.jda.shutdown();
+    }
   }
 
   @Override

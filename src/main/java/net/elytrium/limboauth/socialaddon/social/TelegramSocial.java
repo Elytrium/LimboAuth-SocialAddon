@@ -62,7 +62,9 @@ public class TelegramSocial extends AbstractSocial {
 
   @Override
   public void stop() {
-    this.botSession.stop();
+    if (this.botSession != null) {
+      this.botSession.stop();
+    }
   }
 
   @Override

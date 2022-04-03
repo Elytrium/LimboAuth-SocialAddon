@@ -45,9 +45,7 @@ public class VKSocial extends AbstractSocial {
 
   @Override
   public void init() {
-    if (this.bot != null) {
-      this.bot.stopPolling();
-    }
+    this.stop();
 
     this.bot = new BotImpl(Settings.IMP.MAIN.VK.TOKEN, this::proceedMessage, this::proceedButton);
 
@@ -56,7 +54,9 @@ public class VKSocial extends AbstractSocial {
 
   @Override
   public void stop() {
-    this.bot.stopPolling();
+    if (this.bot != null) {
+      this.bot.stopPolling();
+    }
   }
 
   private void startPolling() {
