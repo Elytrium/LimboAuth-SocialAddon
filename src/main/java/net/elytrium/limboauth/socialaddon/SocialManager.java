@@ -74,6 +74,16 @@ public class SocialManager {
     });
   }
 
+  public void clear() {
+    this.stop();
+    this.messageEvents.clear();
+    this.buttonEvents.clear();
+  }
+
+  public void stop() {
+    this.socialList.stream().filter(AbstractSocial::isEnabled).forEach(AbstractSocial::stop);
+  }
+
   public void unregisterHook(SocialPlayer player) {
     this.socialList.stream()
         .filter(AbstractSocial::isEnabled)

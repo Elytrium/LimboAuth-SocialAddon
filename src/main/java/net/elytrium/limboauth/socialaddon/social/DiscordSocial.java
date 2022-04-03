@@ -64,6 +64,11 @@ public class DiscordSocial extends AbstractSocial {
   }
 
   @Override
+  public void stop() {
+    this.jda.shutdown();
+  }
+
+  @Override
   public String getDbField() {
     return SocialPlayer.DISCORD_DB_FIELD;
   }

@@ -43,6 +43,8 @@ public abstract class AbstractSocial {
 
   public abstract void init() throws SocialInitializationException;
 
+  public abstract void stop();
+
   public abstract String getDbField();
 
   public abstract void onPlayerAdded(Long id);

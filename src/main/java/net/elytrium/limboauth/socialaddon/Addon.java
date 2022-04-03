@@ -121,9 +121,16 @@ public class Addon {
 
   @Subscribe(order = PostOrder.FIRST)
   public void onProxyInitialization(ProxyInitializeEvent event) {
-    Settings.IMP.reload(new File(this.dataDirectory.toFile().getAbsoluteFile(), "config.yml"));
     this.metricsFactory.make(this, 14770);
+    UpdatesChecker.checkForUpdates(this.logger);
+  }
 
+  private void reload() {
+    Settings.IMP.reload(new File(this.dataDirectory.toFile().getAbsoluteFile(), "config.yml"));
+
+    this.geoIp = Settings.IMP.MAIN.GEOIP.ENABLED ? new GeoIp(this.dataDirectory) : null;
+
+    this.socialManager.clear();
     this.socialManager.init();
 
     this.keyboard = List.of(
@@ -208,7 +215,7 @@ public class Addon {
 
           ip = player1.getRemoteAddress().getAddress().getHostAddress();
           location = Optional.ofNullable(this.geoIp)
-                  .map(nonNullGeo -> "(" + nonNullGeo.getLocation(ip) + ")").orElse("");
+              .map(nonNullGeo -> "(" + nonNullGeo.getLocation(ip) + ")").orElse("");
         } else {
           server = Settings.IMP.MAIN.STRINGS.STATUS_OFFLINE;
           ip = Settings.IMP.MAIN.STRINGS.STATUS_OFFLINE;
@@ -403,12 +410,11 @@ public class Addon {
         e.printStackTrace();
       }
     });
-
-    UpdatesChecker.checkForUpdates(this.logger);
   }
 
   @Subscribe
   public void onAuthReload(AuthPluginReloadEvent event) throws SQLException {
+    this.reload();
     this.server.getEventManager().unregisterListeners(this);
 
     ConnectionSource source = this.plugin.getConnectionSource();
@@ -419,7 +425,6 @@ public class Addon {
 
     this.nicknamePattern = Pattern.compile(net.elytrium.limboauth.Settings.IMP.MAIN.ALLOWED_NICKNAME_REGEX);
 
-    this.geoIp = Settings.IMP.MAIN.GEOIP.ENABLED ? new GeoIp(this.dataDirectory) : null;
     this.server.getEventManager().register(this, new LimboAuthListener(this.dao, this.socialManager,
         this.keyboard, this.geoIp));
 

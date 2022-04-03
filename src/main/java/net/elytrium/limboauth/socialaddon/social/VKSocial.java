@@ -54,6 +54,11 @@ public class VKSocial extends AbstractSocial {
     this.startPolling();
   }
 
+  @Override
+  public void stop() {
+    this.bot.stopPolling();
+  }
+
   private void startPolling() {
     new Thread(() -> {
       try {

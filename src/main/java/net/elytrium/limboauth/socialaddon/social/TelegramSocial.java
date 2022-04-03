@@ -31,11 +31,13 @@ import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMa
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.ReplyKeyboard;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
+import org.telegram.telegrambots.meta.generics.BotSession;
 import org.telegram.telegrambots.updatesreceivers.DefaultBotSession;
 
 public class TelegramSocial extends AbstractSocial {
 
   private TGBot bot;
+  private BotSession botSession;
 
   public TelegramSocial(SocialMessageListener onMessageReceived, SocialButtonListener onButtonClicked) {
     super(onMessageReceived, onButtonClicked);
@@ -52,10 +54,15 @@ public class TelegramSocial extends AbstractSocial {
       TelegramBotsApi telegramBotsApi = new TelegramBotsApi(DefaultBotSession.class);
 
       this.bot = new TGBot(Settings.IMP.MAIN.TELEGRAM.TOKEN, this::proceedMessage, this::proceedButton);
-      telegramBotsApi.registerBot(this.bot);
+      this.botSession = telegramBotsApi.registerBot(this.bot);
     } catch (TelegramApiException e) {
       throw new SocialInitializationException(e);
     }
+  }
+
+  @Override
+  public void stop() {
+    this.botSession.stop();
   }
 
   @Override
