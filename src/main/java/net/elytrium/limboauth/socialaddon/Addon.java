@@ -393,6 +393,11 @@ public class Addon {
           return;
         }
 
+        if (player.isTotpEnabled()) {
+          this.socialManager.broadcastMessage(dbField, id, Settings.IMP.MAIN.STRINGS.UNLINK_2FA_CONFLICT, this.keyboard);
+          return;
+        }
+
         if (Settings.IMP.MAIN.UNLINK_BTN_ALL) {
           this.dao.delete(player);
           this.socialManager.unregisterHook(player);

@@ -171,6 +171,7 @@ public class Settings extends Config {
       public String UNLINK_DISABLED = "Unlinking disabled";
       public String UNLINK_SUCCESS = "Unlink successful";
       public String UNLINK_BLOCK_CONFLICT = "You cannot unlink the social while your account is blocked. Unblock it first";
+      public String UNLINK_2FA_CONFLICT = "You cannot unlink the social while 2FA is enabled. Disable it first";
 
       public String KEYBOARD_RESTORED = "Keyboard was restored";
 
