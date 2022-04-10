@@ -133,6 +133,10 @@ public class LimboAuthListener {
 
   @Subscribe
   public void onPlayerLeave(DisconnectEvent event) {
+    if (event.getPlayer().getCurrentServer().isEmpty()) {
+      return;
+    }
+
     SocialPlayer player = this.queryPlayer(event.getPlayer());
     if (player != null) {
       if (Settings.IMP.MAIN.ENABLE_NOTIFY && player.isNotifyEnabled()) {
