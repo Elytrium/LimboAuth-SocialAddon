@@ -133,6 +133,7 @@ public class Settings extends Config {
 
       public String NOTIFY_ASK_KICK_MESSAGE = "{PRFX} You were kicked by the Social";
       public String NOTIFY_ASK_VALIDATE = "❔ Someone tries to join the server.{NL}🌐 IP: {IP} {LOCATION}{NL}Is it you?";
+      public String NOTIFY_ASK_VALIDATE_GAME = "{PRFX} You have 2FA enabled, check your social and validate your login!";
       public String NOTIFY_ASK_YES = "It's me";
       public String NOTIFY_ASK_NO = "It's not me";
 

@@ -104,6 +104,10 @@ public class LimboAuthListener {
       this.socialManager.broadcastMessage(player, Settings.IMP.MAIN.STRINGS.NOTIFY_ASK_VALIDATE
           .replace("{IP}", ip).replace("{LOCATION}", Optional.ofNullable(this.geoIp)
               .map(nonNullGeo -> "(" + nonNullGeo.getLocation(ip) + ")").orElse("")), this.yesNoButtons);
+
+      event.getPlayer()
+          .getProxyPlayer()
+          .sendMessage(LegacyComponentSerializer.legacyAmpersand().deserialize(Settings.IMP.MAIN.STRINGS.NOTIFY_ASK_VALIDATE_GAME));
     }
 
     if (player == null && !Settings.IMP.MAIN.STRINGS.LINK_ANNOUNCEMENT.isEmpty()) {
