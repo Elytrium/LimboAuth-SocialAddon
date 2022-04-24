@@ -136,6 +136,8 @@ public class Settings extends Config {
       public String NOTIFY_ASK_VALIDATE_GAME = "{PRFX} You have 2FA enabled, check your social and validate your login!";
       public String NOTIFY_ASK_YES = "It's me";
       public String NOTIFY_ASK_NO = "It's not me";
+      public String NOTIFY_THANKS = "Thanks for verifying your login";
+      public String NOTIFY_WARN = "You can always change your password using the 'Restore' button";
 
       public String BLOCK_TOGGLE_BTN = "Toggle block";
       public String BLOCK_KICK_MESSAGE = "{PRFX} Your account was blocked by the Social";

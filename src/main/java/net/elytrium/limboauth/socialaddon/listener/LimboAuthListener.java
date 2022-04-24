@@ -80,6 +80,7 @@ public class LimboAuthListener {
 
       if (player != null && this.sessions.containsKey(player.getLowercaseNickname())) {
         this.sessions.get(player.getLowercaseNickname()).completeAndCancel(this.askedKick);
+        this.socialManager.broadcastMessage(player, Settings.IMP.MAIN.STRINGS.NOTIFY_WARN, this.keyboard);
       }
     });
 
@@ -88,6 +89,7 @@ public class LimboAuthListener {
 
       if (player != null && this.sessions.containsKey(player.getLowercaseNickname())) {
         this.sessions.get(player.getLowercaseNickname()).complete(TaskEvent.Result.NORMAL);
+        this.socialManager.broadcastMessage(player, Settings.IMP.MAIN.STRINGS.NOTIFY_THANKS, this.keyboard);
       }
     });
   }
