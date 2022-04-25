@@ -46,11 +46,11 @@ dependencies {
     implementation("net.dv8tion:JDA:5.0.0-alpha.9") {
         exclude module: 'opus-java'
     }
-    implementation("org.telegram:telegrambots:5.7.1")
-    implementation("com.github.yvasyliev:java-vk-bots-longpoll-api:3.2.9")
+    implementation('org.telegram:telegrambots:6.0.1')
+    implementation("com.github.yvasyliev:java-vk-bots-longpoll-api:3.2.10")
 
-    implementation("org.bstats:bstats-velocity:2.2.1")
-    compileOnly("com.github.spotbugs:spotbugs-annotations:4.5.3")
+    implementation('org.bstats:bstats-velocity:3.0.0')
+    compileOnly('com.github.spotbugs:spotbugs-annotations:4.6.0')
 
     implementation("com.maxmind.geoip2:geoip2:3.0.1")
     implementation("org.apache.commons:commons-compress:1.21")
