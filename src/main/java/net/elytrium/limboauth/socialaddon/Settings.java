@@ -17,11 +17,10 @@
 
 package net.elytrium.limboauth.socialaddon;
 
-import java.io.File;
 import java.util.List;
-import net.elytrium.limboauth.config.Config;
+import net.elytrium.java.commons.config.YamlConfig;
 
-public class Settings extends Config {
+public class Settings extends YamlConfig {
 
   @Ignore
   public static final Settings IMP = new Settings();
@@ -181,15 +180,6 @@ public class Settings extends Config {
       @Comment("This message will be sent to the players without social-link right after their login")
       public String LINK_ANNOUNCEMENT = "{PRFX} Hey! We recommend you to link a social network using the /addsocial command to secure your account";
 
-    }
-  }
-
-  public void reload(File file) {
-    if (this.load(file, this.PREFIX)) {
-      this.save(file);
-    } else {
-      this.save(file);
-      this.load(file, this.PREFIX);
     }
   }
 }
