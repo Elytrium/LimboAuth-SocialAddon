@@ -17,22 +17,33 @@
 
 package net.elytrium.limboauth.socialaddon.social;
 
-import api.longpoll.bots.LongPollBot;
-import api.longpoll.bots.exceptions.VkApiException;
-import api.longpoll.bots.model.events.messages.MessageEvent;
-import api.longpoll.bots.model.events.messages.MessageNew;
-import api.longpoll.bots.model.objects.additional.Keyboard;
-import api.longpoll.bots.model.objects.additional.buttons.Button;
-import api.longpoll.bots.model.objects.additional.buttons.CallbackButton;
-import api.longpoll.bots.model.objects.basic.Message;
 import com.google.gson.JsonObject;
+import com.vk.api.sdk.actions.LongPoll;
+import com.vk.api.sdk.client.TransportClient;
+import com.vk.api.sdk.client.VkApiClient;
+import com.vk.api.sdk.client.actors.GroupActor;
+import com.vk.api.sdk.exceptions.ApiException;
+import com.vk.api.sdk.exceptions.ClientException;
+import com.vk.api.sdk.exceptions.LongPollServerKeyExpiredException;
+import com.vk.api.sdk.httpclient.HttpTransportClient;
+import com.vk.api.sdk.objects.callback.longpoll.responses.GetLongPollEventsResponse;
+import com.vk.api.sdk.objects.groups.responses.GetLongPollServerResponse;
+import com.vk.api.sdk.objects.messages.Keyboard;
+import com.vk.api.sdk.objects.messages.KeyboardButton;
+import com.vk.api.sdk.objects.messages.KeyboardButtonAction;
+import com.vk.api.sdk.objects.messages.KeyboardButtonColor;
+import com.vk.api.sdk.objects.messages.TemplateActionTypeNames;
+import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
 import net.elytrium.limboauth.socialaddon.Settings;
 import net.elytrium.limboauth.socialaddon.model.SocialPlayer;
 
 public class VKSocial extends AbstractSocial {
-  private BotImpl bot;
+  private VkApiClient vk;
+  private GroupActor actor;
+  private boolean polling;
 
   public VKSocial(SocialMessageListener onMessageReceived, SocialButtonListener onButtonClicked) {
     super(onMessageReceived, onButtonClicked);
@@ -47,32 +58,76 @@ public class VKSocial extends AbstractSocial {
   public void init() {
     this.stop();
 
-    this.bot = new BotImpl(Settings.IMP.MAIN.VK.TOKEN, this::proceedMessage, this::proceedButton);
+    TransportClient transportClient = new HttpTransportClient();
+    GroupActor tempActor = new GroupActor(0, Settings.IMP.MAIN.VK.TOKEN);
 
-    this.startPolling();
+    try {
+      this.vk = new VkApiClient(transportClient);
+      int groupId = this.vk.groups().getByIdObjectLegacy(tempActor).groupIds(Collections.emptyList()).execute().get(0).getId();
+
+      this.actor = new GroupActor(groupId, Settings.IMP.MAIN.VK.TOKEN);
+      this.vk.groups().setLongPollSettings(this.actor, groupId).enabled(true)
+          .messageEvent(true)
+          .messageNew(true)
+          .execute();
+
+      this.polling = true;
+      new Thread(() -> {
+        while (this.polling) {
+          try {
+            this.startPolling();
+          } catch (LongPollServerKeyExpiredException ignored) {
+            // ignored
+          } catch (ClientException | ApiException e) {
+            e.printStackTrace();
+          }
+        }
+      }).start();
+    } catch (ApiException | ClientException e) {
+      throw new RuntimeException(e);
+    }
   }
 
   @Override
   public void stop() {
-    if (this.bot != null) {
-      this.bot.stopPolling();
-    }
+    this.polling = false;
   }
 
-  private void startPolling() {
-    new Thread(() -> {
-      try {
-        this.bot.startPolling();
-      } catch (VkApiException e) {
-        e.printStackTrace();
-        try {
-          Thread.sleep(1000);
-        } catch (InterruptedException ex) {
-          ex.printStackTrace();
+  public void startPolling() throws ClientException, ApiException {
+    GetLongPollServerResponse serverInfo = this.vk.groups().getLongPollServer(this.actor, this.actor.getGroupId()).execute();
+    LongPoll longPoll = new LongPoll(this.vk);
+
+    String server = serverInfo.getServer();
+    String key = serverInfo.getKey();
+    String ts = serverInfo.getTs();
+    while (this.polling) {
+      GetLongPollEventsResponse longPollResponse = longPoll.getEvents(server, key, ts).waitTime(25).execute();
+      ts = longPollResponse.getTs();
+
+      longPollResponse.getUpdates().forEach(e -> {
+        if (e.has("type") && e.has("object")) {
+          String type = e.get("type").getAsString();
+          JsonObject object = e.get("object").getAsJsonObject();
+
+          if (object != null) {
+            switch (type) {
+              case "message_new": {
+                this.onMessageNew(object);
+                break;
+              }
+              case "message_event": {
+                this.onMessageEvent(object);
+                break;
+              }
+              default: {
+                // ignored
+                break;
+              }
+            }
+          }
         }
-        this.startPolling();
-      }
-    }).start();
+      });
+    }
   }
 
   @Override
@@ -92,32 +147,53 @@ public class VKSocial extends AbstractSocial {
 
   @Override
   public void sendMessage(Long id, String content, List<List<ButtonItem>> buttons) {
-    List<List<Button>> vkButtons = buttons.stream().map(row -> row.stream().map(button -> {
-      Button.Color color;
+    List<List<KeyboardButton>> vkButtons = buttons.stream().map(row -> row.stream().map(button -> {
+      KeyboardButtonColor color;
       switch (button.getColor()) {
         case RED:
-          color = Button.Color.NEGATIVE;
+          color = KeyboardButtonColor.NEGATIVE;
           break;
         case GREEN:
-          color = Button.Color.POSITIVE;
+          color = KeyboardButtonColor.POSITIVE;
           break;
         case SECONDARY:
         case LINK:
-          color = Button.Color.SECONDARY;
+          color = KeyboardButtonColor.DEFAULT;
           break;
         case PRIMARY:
         default:
-          color = Button.Color.PRIMARY;
+          color = KeyboardButtonColor.PRIMARY;
           break;
       }
 
       JsonObject payload = new JsonObject();
       payload.addProperty("button", button.getId());
 
-      return (Button) new CallbackButton(color, new CallbackButton.Action(button.getValue(), payload));
+      return new KeyboardButton()
+          .setColor(color)
+          .setAction(
+              new KeyboardButtonAction()
+                  .setType(TemplateActionTypeNames.CALLBACK)
+                  .setLabel(button.getValue())
+                  .setPayload(payload.toString()));
     }).collect(Collectors.toList())).collect(Collectors.toList());
 
-    this.bot.sendMessage(id.intValue(), content, vkButtons);
+    try {
+      Keyboard keyboard = new Keyboard()
+          .setButtons(vkButtons)
+          .setInline(false)
+          .setOneTime(false);
+
+      this.vk.messages()
+          .send(this.actor)
+          .userId(id.intValue())
+          .message(content)
+          .keyboard(keyboard)
+          .randomId(ThreadLocalRandom.current().nextInt())
+          .execute();
+    } catch (ClientException | ApiException e) {
+      throw new RuntimeException(e);
+    }
   }
 
   @Override
@@ -130,61 +206,33 @@ public class VKSocial extends AbstractSocial {
     return player.getVkID() != null;
   }
 
-  private static class BotImpl extends LongPollBot {
+  public void onMessageNew(JsonObject messageNew) {
+    if (messageNew.has("message")) {
+      JsonObject message = messageNew.get("message").getAsJsonObject();
 
-    private final String token;
-    private final SocialMessageListener onMessageReceived;
-    private final SocialButtonListener onButtonClicked;
-
-    BotImpl(String token, SocialMessageListener onMessageReceived, SocialButtonListener onButtonClicked) {
-      this.token = token;
-      this.onMessageReceived = onMessageReceived;
-      this.onButtonClicked = onButtonClicked;
+      if (message.has("text")) {
+        this.proceedMessage(SocialPlayer.VK_DB_FIELD, message.get("from_id").getAsLong(), message.get("text").getAsString());
+      }
     }
+  }
 
-    @Override
-    public String getAccessToken() {
-      return this.token;
-    }
+  public void onMessageEvent(JsonObject messageEvent) {
+    if (messageEvent.has("payload")) {
+      JsonObject payload = messageEvent.get("payload").getAsJsonObject();
+      String eventId = messageEvent.get("event_id").getAsString();
+      int userId = messageEvent.get("user_id").getAsInt();
+      int peerId = messageEvent.get("peer_id").getAsInt();
 
-    public void sendMessage(Integer id, String content, List<List<Button>> buttons) {
       try {
-        Keyboard keyboard = new Keyboard(buttons).setInline(false).setOneTime(false);
-        this.vk.messages.send().setUserId(id).setMessage(content).setKeyboard(keyboard).execute();
-      } catch (VkApiException e) {
+        this.vk.messages()
+            .sendMessageEventAnswer(this.actor, eventId, userId, peerId)
+            .execute();
+      } catch (ClientException | ApiException e) {
         e.printStackTrace();
       }
-    }
 
-    @Override
-    public void onMessageNew(MessageNew messageNew) {
-      Message message = messageNew.getMessage();
-
-      if (message == null) {
-        return;
-      }
-
-      if (message.hasText()) {
-        this.onMessageReceived.accept(SocialPlayer.VK_DB_FIELD, Long.valueOf(message.getFromId()), message.getText());
-      }
-    }
-
-    @Override
-    public void onMessageEvent(MessageEvent messageEvent) {
-      if (messageEvent.getPayload() != null && messageEvent.getPayload().isJsonObject()) {
-        JsonObject object = messageEvent.getPayload().getAsJsonObject();
-        if (object.has("button")) {
-          try {
-            this.vk.messages.sendEventAnswer()
-                .setEventId(messageEvent.getEventId())
-                .setUserId(messageEvent.getUserId())
-                .setPeerId(messageEvent.getPeerId())
-                .execute();
-          } catch (VkApiException e) {
-            e.printStackTrace();
-          }
-          this.onButtonClicked.accept(SocialPlayer.VK_DB_FIELD, Long.valueOf(messageEvent.getUserId()), object.get("button").getAsString());
-        }
+      if (payload.has("button")) {
+        this.proceedButton(SocialPlayer.VK_DB_FIELD, (long) userId, payload.get("button").getAsString());
       }
     }
   }

@@ -47,7 +47,7 @@ dependencies {
         exclude module: 'opus-java'
     }
     implementation('org.telegram:telegrambots:6.0.1')
-    implementation("com.github.yvasyliev:java-vk-bots-longpoll-api:3.2.10")
+    implementation("com.vk.api:sdk:1.0.14")
 
     implementation('org.bstats:bstats-velocity:3.0.0')
     compileOnly('com.github.spotbugs:spotbugs-annotations:4.6.0')
@@ -74,9 +74,9 @@ shadowJar {
     relocate("org.bstats", "net.elytrium.limboapi.thirdparty.org.bstats")
     exclude("org/bstats/**")
 
-    relocate("net.dv8tion.jda", "net.elytrium.limboapi.thirdparty.net.dv8tion.jda")
-    relocate("org.telegram.telegrambots", "net.elytrium.limboapi.thirdparty.org.telegram.telegrambots")
-    relocate("api.longpoll.bots", "net.elytrium.limboapi.thirdparty.api.longpoll.bots")
+    relocate("net.dv8tion.jda", "net.elytrium.limboauth.socialaddon.thirdparty.net.dv8tion.jda")
+    relocate("org.telegram.telegrambots", "net.elytrium.limboauth.socialaddon.thirdparty.org.telegram.telegrambots")
+    relocate("com.vk.api", "net.elytrium.limboauth.socialaddon.thirdparty.com.vk.api")
 }
 
 license {
