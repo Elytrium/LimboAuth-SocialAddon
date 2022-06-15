@@ -39,6 +39,7 @@ import net.elytrium.limboauth.socialaddon.model.SocialPlayer;
 import net.elytrium.limboauth.socialaddon.social.AbstractSocial;
 import net.elytrium.limboauth.socialaddon.utils.GeoIp;
 import net.elytrium.limboauth.thirdparty.com.j256.ormlite.dao.Dao;
+import net.kyori.adventure.audience.MessageType;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 
@@ -109,11 +110,11 @@ public class LimboAuthListener {
 
       event.getPlayer()
           .getProxyPlayer()
-          .sendMessage(LegacyComponentSerializer.legacyAmpersand().deserialize(Settings.IMP.MAIN.STRINGS.NOTIFY_ASK_VALIDATE_GAME));
+          .sendMessage(LegacyComponentSerializer.legacyAmpersand().deserialize(Settings.IMP.MAIN.STRINGS.NOTIFY_ASK_VALIDATE_GAME), MessageType.SYSTEM);
     }
 
     if (player == null && !Settings.IMP.MAIN.STRINGS.LINK_ANNOUNCEMENT.isEmpty()) {
-      proxyPlayer.sendMessage(LegacyComponentSerializer.legacyAmpersand().deserialize(Settings.IMP.MAIN.STRINGS.LINK_ANNOUNCEMENT));
+      proxyPlayer.sendMessage(LegacyComponentSerializer.legacyAmpersand().deserialize(Settings.IMP.MAIN.STRINGS.LINK_ANNOUNCEMENT), MessageType.SYSTEM);
     }
   }
 
@@ -122,7 +123,7 @@ public class LimboAuthListener {
     if (!Settings.IMP.MAIN.STRINGS.LINK_ANNOUNCEMENT.isEmpty()) {
       event.getPlayer()
           .getProxyPlayer()
-          .sendMessage(LegacyComponentSerializer.legacyAmpersand().deserialize(Settings.IMP.MAIN.STRINGS.LINK_ANNOUNCEMENT));
+          .sendMessage(LegacyComponentSerializer.legacyAmpersand().deserialize(Settings.IMP.MAIN.STRINGS.LINK_ANNOUNCEMENT), MessageType.SYSTEM);
     }
   }
 
