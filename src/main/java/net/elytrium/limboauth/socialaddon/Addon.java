@@ -172,6 +172,7 @@ public class Addon {
 
         String account = message.substring(desiredLength).toLowerCase(Locale.ROOT);
         if (!this.nicknamePattern.matcher(account).matches()) {
+          this.socialManager.broadcastMessage(dbField, id, Settings.IMP.MAIN.STRINGS.LINK_UNKNOWN_ACCOUNT);
           return;
         }
 

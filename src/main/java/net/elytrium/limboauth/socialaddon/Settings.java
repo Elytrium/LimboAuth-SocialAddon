@@ -126,6 +126,7 @@ public class Settings extends YamlConfig {
       public String LINK_SUCCESS = "✅ Social was successfully linked{NL}Use '!keyboard' to show keyboard";
       public String LINK_ALREADY = "Account is already linked";
       public String LINK_SOCIAL_CMD_USAGE = "You didn't specify a nickname. Enter '!account link <nickname>'";
+      public String LINK_UNKNOWN_ACCOUNT = "There is no account with this nickname";
       public String LINK_CODE = "🔑 Enter '/addsocial {CODE}' in game to complete account linking";
 
       public String NOTIFY_LEAVE = "➖ You've left the server";
