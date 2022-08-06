@@ -156,6 +156,7 @@ public class Addon {
         int desiredLength = Settings.IMP.MAIN.SOCIAL_LINK_CMD.length() + 1;
 
         if (message.length() <= desiredLength) {
+          this.socialManager.broadcastMessage(dbField, id, Settings.IMP.MAIN.STRINGS.LINK_SOCIAL_CMD_USAGE);
           return;
         }
 
@@ -171,6 +172,7 @@ public class Addon {
 
         String account = message.substring(desiredLength).toLowerCase(Locale.ROOT);
         if (!this.nicknamePattern.matcher(account).matches()) {
+          this.socialManager.broadcastMessage(dbField, id, Settings.IMP.MAIN.STRINGS.LINK_UNKNOWN_ACCOUNT);
           return;
         }
 
