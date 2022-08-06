@@ -64,7 +64,12 @@ public class ValidateLinkCommand implements SimpleCommand {
 
             if (code == validCode) {
               Addon.TempAccount tempAccount = this.addon.getTempAccount(username);
-              this.socialDao.createIfNotExists(new SocialPlayer(username));
+              if (this.socialDao.queryForId(username) == null) {
+                this.socialDao.create(new SocialPlayer(username));
+              } else if (!Settings.IMP.MAIN.ALLOW_ACCOUNT_RELINK) {
+                this.addon.getSocialManager().broadcastMessage(tempAccount.getDbField(), tempAccount.getId(), Settings.IMP.MAIN.STRINGS.LINK_ALREADY);
+                return;
+              }
 
               UpdateBuilder<SocialPlayer, String> updateBuilder = this.socialDao.updateBuilder();
               updateBuilder.where().eq(SocialPlayer.LOWERCASE_NICKNAME_FIELD, username);

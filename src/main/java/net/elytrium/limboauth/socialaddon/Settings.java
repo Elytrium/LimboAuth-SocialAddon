@@ -52,6 +52,14 @@ public class Settings extends YamlConfig {
     @Comment("Disable unlinking?")
     public boolean DISABLE_UNLINK = false;
 
+    @Comment("Default buttons state")
+    public boolean DEFAULT_BLOCKED = false;
+    public boolean DEFAULT_TOTP_ENABLED = false;
+    public boolean DEFAULT_NOTIFY_ENABLED = true;
+
+    @Comment("Allow linking social to the player, who already has linked this type of social")
+    public boolean ALLOW_ACCOUNT_RELINK = true;
+
     public List<String> AFTER_LINKAGE_COMMANDS = List.of("alert {NICKNAME} ({UUID}) has linked a social account");
 
     @Create

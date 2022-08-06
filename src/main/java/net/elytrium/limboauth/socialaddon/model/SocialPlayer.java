@@ -17,6 +17,7 @@
 
 package net.elytrium.limboauth.socialaddon.model;
 
+import net.elytrium.limboauth.socialaddon.Settings;
 import net.elytrium.limboauth.thirdparty.com.j256.ormlite.field.DatabaseField;
 import net.elytrium.limboauth.thirdparty.com.j256.ormlite.table.DatabaseTable;
 
@@ -41,13 +42,13 @@ public class SocialPlayer {
   private Long discordID;
 
   @DatabaseField(columnName = "BLOCKED")
-  private Boolean blocked = false;
+  private Boolean blocked = Settings.IMP.MAIN.DEFAULT_BLOCKED;
 
   @DatabaseField(columnName = "TOTP_ENABLED")
-  private Boolean totpEnabled = false;
+  private Boolean totpEnabled = Settings.IMP.MAIN.DEFAULT_TOTP_ENABLED;
 
   @DatabaseField(columnName = "NOTIFY_ENABLED")
-  private Boolean notifyEnabled = true;
+  private Boolean notifyEnabled = Settings.IMP.MAIN.DEFAULT_NOTIFY_ENABLED;
 
   public SocialPlayer(String lowercaseNickname) {
     this.lowercaseNickname = lowercaseNickname;
