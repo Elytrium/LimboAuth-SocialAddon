@@ -125,6 +125,7 @@ public class Settings extends YamlConfig {
       public String LINK_WRONG_CODE = "{PRFX} Wrong code, run '!account link {NICKNAME}' again";
       public String LINK_SUCCESS = "✅ Social was successfully linked{NL}Use '!keyboard' to show keyboard";
       public String LINK_ALREADY = "Account is already linked";
+      public String LINK_SOCIAL_CMD_USAGE = "You didn't specify a nickname. Enter '!account link <nickname>'";
       public String LINK_CODE = "🔑 Enter '/addsocial {CODE}' in game to complete account linking";
 
       public String NOTIFY_LEAVE = "➖ You've left the server";
