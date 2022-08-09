@@ -33,6 +33,7 @@ import net.elytrium.limboauth.event.PostAuthorizationEvent;
 import net.elytrium.limboauth.event.PostRegisterEvent;
 import net.elytrium.limboauth.event.PreAuthorizationEvent;
 import net.elytrium.limboauth.event.TaskEvent;
+import net.elytrium.limboauth.socialaddon.Addon;
 import net.elytrium.limboauth.socialaddon.Settings;
 import net.elytrium.limboauth.socialaddon.SocialManager;
 import net.elytrium.limboauth.socialaddon.model.SocialPlayer;
@@ -41,15 +42,14 @@ import net.elytrium.limboauth.socialaddon.utils.GeoIp;
 import net.elytrium.limboauth.thirdparty.com.j256.ormlite.dao.Dao;
 import net.kyori.adventure.audience.MessageType;
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 
 public class LimboAuthListener {
 
   private static final String ASK_NO_BTN = "ask_no";
   private static final String ASK_YES_BTN = "ask_yes";
 
-  private final Component blockedAccount = LegacyComponentSerializer.legacyAmpersand().deserialize(Settings.IMP.MAIN.STRINGS.BLOCK_KICK_MESSAGE);
-  private final Component askedKick = LegacyComponentSerializer.legacyAmpersand().deserialize(Settings.IMP.MAIN.STRINGS.NOTIFY_ASK_KICK_MESSAGE);
+  private final Component blockedAccount = Addon.getSerializer().deserialize(Settings.IMP.MAIN.STRINGS.BLOCK_KICK_MESSAGE);
+  private final Component askedKick = Addon.getSerializer().deserialize(Settings.IMP.MAIN.STRINGS.NOTIFY_ASK_KICK_MESSAGE);
 
   private final Dao<SocialPlayer, String> socialPlayerDao;
   private final SocialManager socialManager;
@@ -110,11 +110,11 @@ public class LimboAuthListener {
 
       event.getPlayer()
           .getProxyPlayer()
-          .sendMessage(LegacyComponentSerializer.legacyAmpersand().deserialize(Settings.IMP.MAIN.STRINGS.NOTIFY_ASK_VALIDATE_GAME), MessageType.SYSTEM);
+          .sendMessage(Addon.getSerializer().deserialize(Settings.IMP.MAIN.STRINGS.NOTIFY_ASK_VALIDATE_GAME), MessageType.SYSTEM);
     }
 
     if (player == null && !Settings.IMP.MAIN.STRINGS.LINK_ANNOUNCEMENT.isEmpty()) {
-      proxyPlayer.sendMessage(LegacyComponentSerializer.legacyAmpersand().deserialize(Settings.IMP.MAIN.STRINGS.LINK_ANNOUNCEMENT), MessageType.SYSTEM);
+      proxyPlayer.sendMessage(Addon.getSerializer().deserialize(Settings.IMP.MAIN.STRINGS.LINK_ANNOUNCEMENT), MessageType.SYSTEM);
     }
   }
 
@@ -123,7 +123,7 @@ public class LimboAuthListener {
     if (!Settings.IMP.MAIN.STRINGS.LINK_ANNOUNCEMENT.isEmpty()) {
       event.getPlayer()
           .getProxyPlayer()
-          .sendMessage(LegacyComponentSerializer.legacyAmpersand().deserialize(Settings.IMP.MAIN.STRINGS.LINK_ANNOUNCEMENT), MessageType.SYSTEM);
+          .sendMessage(Addon.getSerializer().deserialize(Settings.IMP.MAIN.STRINGS.LINK_ANNOUNCEMENT), MessageType.SYSTEM);
     }
   }
 

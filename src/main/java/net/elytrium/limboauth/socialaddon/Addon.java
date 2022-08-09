@@ -29,6 +29,7 @@ import com.velocitypowered.api.plugin.annotation.DataDirectory;
 import com.velocitypowered.api.proxy.Player;
 import com.velocitypowered.api.proxy.ProxyServer;
 import com.velocitypowered.api.proxy.ServerConnection;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.io.File;
 import java.nio.file.Path;
 import java.sql.SQLException;
@@ -39,12 +40,14 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.regex.Pattern;
+import net.elytrium.java.commons.mc.serialization.Serializer;
+import net.elytrium.java.commons.mc.serialization.Serializers;
 import net.elytrium.limboauth.LimboAuth;
-import net.elytrium.limboauth.event.AuthPluginReloadEvent;
 import net.elytrium.limboauth.handler.AuthSessionHandler;
 import net.elytrium.limboauth.model.RegisteredPlayer;
 import net.elytrium.limboauth.socialaddon.command.ValidateLinkCommand;
 import net.elytrium.limboauth.socialaddon.listener.LimboAuthListener;
+import net.elytrium.limboauth.socialaddon.listener.ReloadListener;
 import net.elytrium.limboauth.socialaddon.model.SocialPlayer;
 import net.elytrium.limboauth.socialaddon.social.AbstractSocial;
 import net.elytrium.limboauth.socialaddon.social.DiscordSocial;
@@ -57,7 +60,8 @@ import net.elytrium.limboauth.thirdparty.com.j256.ormlite.dao.DaoManager;
 import net.elytrium.limboauth.thirdparty.com.j256.ormlite.stmt.UpdateBuilder;
 import net.elytrium.limboauth.thirdparty.com.j256.ormlite.support.ConnectionSource;
 import net.elytrium.limboauth.thirdparty.com.j256.ormlite.table.TableUtils;
-import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.serializer.ComponentSerializer;
 import org.bstats.velocity.Metrics;
 import org.slf4j.Logger;
 
@@ -79,6 +83,8 @@ public class Addon {
   private static final String KICK_BTN = "kick";
   private static final String RESTORE_BTN = "restore";
   private static final String UNLINK_BTN = "unlink";
+
+  private static Serializer SERIALIZER;
 
   private final ProxyServer server;
   private final Logger logger;
@@ -125,8 +131,17 @@ public class Addon {
     UpdatesChecker.checkForUpdates(this.logger);
   }
 
-  private void reload() {
+  @SuppressFBWarnings(value = "NP_NULL_ON_SOME_PATH", justification = "LEGACY_AMPERSAND can't be null in velocity.")
+  private void load() {
     Settings.IMP.reload(new File(this.dataDirectory.toFile().getAbsoluteFile(), "config.yml"), Settings.IMP.PREFIX);
+
+    ComponentSerializer<Component, Component, String> serializer = Serializers.valueOf(Settings.IMP.SERIALIZER.toUpperCase(Locale.ROOT)).getSerializer();
+    if (serializer == null) {
+      this.logger.warn("The specified serializer could not be founded, using default. (LEGACY_AMPERSAND)");
+      setSerializer(new Serializer(Objects.requireNonNull(Serializers.LEGACY_AMPERSAND.getSerializer())));
+    } else {
+      setSerializer(new Serializer(serializer));
+    }
 
     this.geoIp = Settings.IMP.MAIN.GEOIP.ENABLED ? new GeoIp(this.dataDirectory) : null;
 
@@ -259,7 +274,7 @@ public class Addon {
           this.plugin.removePlayerFromCache(player.getLowercaseNickname());
           this.server
               .getPlayer(player.getLowercaseNickname())
-              .ifPresent(e -> e.disconnect(LegacyComponentSerializer.legacyAmpersand().deserialize(Settings.IMP.MAIN.STRINGS.KICK_GAME_MESSAGE)));
+              .ifPresent(e -> e.disconnect(Addon.getSerializer().deserialize(Settings.IMP.MAIN.STRINGS.KICK_GAME_MESSAGE)));
 
           this.socialManager.broadcastMessage(dbField, id,
               Settings.IMP.MAIN.STRINGS.BLOCK_SUCCESS.replace("{NICKNAME}", player.getLowercaseNickname()), this.keyboard);
@@ -336,7 +351,7 @@ public class Addon {
         this.plugin.removePlayerFromCache(player.getLowercaseNickname());
 
         if (proxyPlayer.isPresent()) {
-          proxyPlayer.get().disconnect(LegacyComponentSerializer.legacyAmpersand().deserialize(Settings.IMP.MAIN.STRINGS.KICK_GAME_MESSAGE));
+          proxyPlayer.get().disconnect(Addon.getSerializer().deserialize(Settings.IMP.MAIN.STRINGS.KICK_GAME_MESSAGE));
           this.socialManager.broadcastMessage(dbField, id,
               Settings.IMP.MAIN.STRINGS.KICK_SUCCESS.replace("{NICKNAME}", player.getLowercaseNickname()), this.keyboard);
         } else {
@@ -419,9 +434,8 @@ public class Addon {
     });
   }
 
-  @Subscribe
-  public void onAuthReload(AuthPluginReloadEvent event) throws SQLException {
-    this.reload();
+  public void onReload() throws SQLException {
+    this.load();
     this.server.getEventManager().unregisterListeners(this);
 
     ConnectionSource source = this.plugin.getConnectionSource();
@@ -434,6 +448,13 @@ public class Addon {
 
     this.server.getEventManager().register(this, new LimboAuthListener(this.dao, this.socialManager,
         this.keyboard, this.geoIp));
+    this.server.getEventManager().register(this, new ReloadListener(() -> {
+      try {
+        this.onReload();
+      } catch (SQLException e) {
+        e.printStackTrace();
+      }
+    }));
 
     CommandManager commandManager = this.server.getCommandManager();
     commandManager.unregister(Settings.IMP.MAIN.LINKAGE_MAIN_CMD);
@@ -490,5 +511,13 @@ public class Addon {
       return this.id;
     }
 
+  }
+
+  private static void setSerializer(Serializer serializer) {
+    SERIALIZER = serializer;
+  }
+
+  public static Serializer getSerializer() {
+    return SERIALIZER;
   }
 }
