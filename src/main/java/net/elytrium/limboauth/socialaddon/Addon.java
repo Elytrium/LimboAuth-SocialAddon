@@ -127,6 +127,7 @@ public class Addon {
 
   @Subscribe(order = PostOrder.FIRST)
   public void onProxyInitialization(ProxyInitializeEvent event) {
+    this.load();
     this.metricsFactory.make(this, 14770);
     UpdatesChecker.checkForUpdates(this.logger);
   }
