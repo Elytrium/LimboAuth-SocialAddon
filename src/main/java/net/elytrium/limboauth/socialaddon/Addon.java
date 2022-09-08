@@ -125,9 +125,9 @@ public class Addon {
     this.requestedReverseMap = new HashMap<>();
   }
 
-  @Subscribe(order = PostOrder.FIRST)
-  public void onProxyInitialization(ProxyInitializeEvent event) {
-    this.load();
+  @Subscribe(order = PostOrder.NORMAL)
+  public void onProxyInitialization(ProxyInitializeEvent event) throws SQLException {
+    this.onReload();
     this.metricsFactory.make(this, 14770);
     UpdatesChecker.checkForUpdates(this.logger);
   }
