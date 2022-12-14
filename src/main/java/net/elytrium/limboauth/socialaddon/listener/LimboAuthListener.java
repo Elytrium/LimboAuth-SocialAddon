@@ -99,7 +99,7 @@ public class LimboAuthListener {
   public void onAuthCompleted(PostAuthorizationEvent event) {
     Player proxyPlayer = event.getPlayer().getProxyPlayer();
     SocialPlayer player = this.queryPlayer(proxyPlayer);
-    if (player != null && player.isTotpEnabled()) {
+    if (player != null && player.isTotpEnabled() && (player.getDiscordID() != null || player.getVkID() != null || player.getTelegramID() != null)) {
       event.setResult(TaskEvent.Result.WAIT);
       this.sessions.put(player.getLowercaseNickname(), event);
 
