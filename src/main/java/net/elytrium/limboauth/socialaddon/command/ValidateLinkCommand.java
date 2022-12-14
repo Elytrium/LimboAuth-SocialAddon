@@ -29,8 +29,6 @@ import net.elytrium.limboauth.socialaddon.Settings;
 import net.elytrium.limboauth.socialaddon.model.SocialPlayer;
 import net.elytrium.limboauth.thirdparty.com.j256.ormlite.dao.Dao;
 import net.elytrium.limboauth.thirdparty.com.j256.ormlite.stmt.UpdateBuilder;
-import net.kyori.adventure.audience.MessageType;
-import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 
 public class ValidateLinkCommand implements SimpleCommand {
 
@@ -51,9 +49,8 @@ public class ValidateLinkCommand implements SimpleCommand {
       Player player = (Player) source;
 
       if (args.length == 0) {
-        source.sendMessage(LegacyComponentSerializer
-            .legacyAmpersand()
-            .deserialize(Settings.IMP.MAIN.STRINGS.LINK_CMD_USAGE.replace("{NICKNAME}", player.getUsername())), MessageType.SYSTEM);
+        source.sendMessage(Addon.getSerializer()
+            .deserialize(Settings.IMP.MAIN.STRINGS.LINK_CMD_USAGE.replace("{NICKNAME}", player.getUsername())));
       } else {
         try {
           String username = player.getUsername().toLowerCase(Locale.ROOT);
@@ -85,9 +82,8 @@ public class ValidateLinkCommand implements SimpleCommand {
               this.addon.getSocialManager()
                   .broadcastMessage(tempAccount.getDbField(), tempAccount.getId(), Settings.IMP.MAIN.STRINGS.LINK_SUCCESS, this.addon.getKeyboard());
             } else {
-              source.sendMessage(LegacyComponentSerializer
-                  .legacyAmpersand()
-                  .deserialize(Settings.IMP.MAIN.STRINGS.LINK_WRONG_CODE.replace("{NICKNAME}", player.getUsername())), MessageType.SYSTEM);
+              source.sendMessage(Addon.getSerializer()
+                  .deserialize(Settings.IMP.MAIN.STRINGS.LINK_WRONG_CODE.replace("{NICKNAME}", player.getUsername())));
             }
 
             this.addon.removeCode(username);
@@ -104,9 +100,8 @@ public class ValidateLinkCommand implements SimpleCommand {
   }
 
   private void sendUsage(Player player) {
-    player.sendMessage(LegacyComponentSerializer
-        .legacyAmpersand()
-        .deserialize(Settings.IMP.MAIN.STRINGS.LINK_CMD_USAGE.replace("{NICKNAME}", player.getUsername())), MessageType.SYSTEM);
+    player.sendMessage(Addon.getSerializer()
+        .deserialize(Settings.IMP.MAIN.STRINGS.LINK_CMD_USAGE.replace("{NICKNAME}", player.getUsername())));
   }
 
   @Override
