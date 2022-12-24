@@ -168,6 +168,11 @@ public class Addon {
     );
 
     this.socialManager.addMessageEvent((dbField, id, message) -> {
+      if (Settings.IMP.MAIN.START_MESSAGES.contains(message)) {
+        this.socialManager.broadcastMessage(dbField, id, Settings.IMP.MAIN.START_REPLY);
+        return;
+      }
+
       if (message.startsWith(Settings.IMP.MAIN.SOCIAL_LINK_CMD)) {
         int desiredLength = Settings.IMP.MAIN.SOCIAL_LINK_CMD.length() + 1;
 

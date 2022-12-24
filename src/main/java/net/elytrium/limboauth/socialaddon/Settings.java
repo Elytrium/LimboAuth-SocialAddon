@@ -70,6 +70,8 @@ public class Settings extends YamlConfig {
     public boolean ALLOW_ACCOUNT_RELINK = true;
 
     public List<String> AFTER_LINKAGE_COMMANDS = List.of("alert {NICKNAME} ({UUID}) has linked a social account");
+    public List<String> START_MESSAGES = List.of("/start", "Начать");
+    public String START_REPLY = "Send '!account link <nickname>' to link your account";
 
     @Create
     public MAIN.VK VK;
