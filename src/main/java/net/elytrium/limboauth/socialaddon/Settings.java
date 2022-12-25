@@ -181,6 +181,7 @@ public class Settings extends YamlConfig {
 
       public String RESTORE_BTN = "Restore";
       public String RESTORE_MSG = "The new password for {NICKNAME} is: {PASSWORD}";
+      public String RESTORE_MSG_NO_USER = "There is no user {NICKNAME} in database. Perhaps you are a premium player.";
 
       public String INFO_BTN = "Info";
       public String INFO_MSG = "👤 IGN: {NICKNAME}{NL}🌍 Current status: {SERVER}{NL}🌐 IP: {IP} {LOCATION}{NL}⏰ Notifications: {NOTIFY_STATUS}{NL}❌ Blocked: {BLOCK_STATUS}{NL}🔑 2FA: {TOTP_STATUS}";

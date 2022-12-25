@@ -397,11 +397,17 @@ public class Addon {
         UpdateBuilder<RegisteredPlayer, String> updateBuilder = playerDao.updateBuilder();
         updateBuilder.where().eq("LOWERCASENICKNAME", player.getLowercaseNickname());
         updateBuilder.updateColumnValue("HASH", AuthSessionHandler.genHash(newPassword));
-        updateBuilder.update();
+        boolean updated = updateBuilder.update() != 0;
 
-        this.socialManager.broadcastMessage(dbField, id,
-            Settings.IMP.MAIN.STRINGS.RESTORE_MSG.replace("{NICKNAME}", player.getLowercaseNickname()).replace("{PASSWORD}", newPassword),
-            this.keyboard);
+        if (updated) {
+          this.socialManager.broadcastMessage(dbField, id,
+              Settings.IMP.MAIN.STRINGS.RESTORE_MSG.replace("{NICKNAME}", player.getLowercaseNickname()).replace("{PASSWORD}", newPassword),
+              this.keyboard);
+        } else {
+          this.socialManager.broadcastMessage(dbField, id,
+              Settings.IMP.MAIN.STRINGS.RESTORE_MSG_NO_USER.replace("{NICKNAME}", player.getLowercaseNickname()),
+              this.keyboard);
+        }
       } catch (SQLException e) {
         e.printStackTrace();
       }
