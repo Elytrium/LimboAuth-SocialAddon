@@ -173,42 +173,51 @@ public class Addon {
         return;
       }
 
-      if (message.startsWith(Settings.IMP.MAIN.SOCIAL_LINK_CMD)) {
-        int desiredLength = Settings.IMP.MAIN.SOCIAL_LINK_CMD.length() + 1;
+      for (String socialLinkCmd : Settings.IMP.MAIN.SOCIAL_LINK_CMDS) {
+        if (message.startsWith(socialLinkCmd)) {
+          int desiredLength = socialLinkCmd.length() + 1;
 
-        if (message.length() <= desiredLength) {
-          this.socialManager.broadcastMessage(dbField, id, Settings.IMP.MAIN.STRINGS.LINK_SOCIAL_CMD_USAGE);
-          return;
-        }
-
-        try {
-          if (this.dao.queryForEq(dbField, id).size() != 0) {
-            this.socialManager.broadcastMessage(dbField, id, Settings.IMP.MAIN.STRINGS.LINK_ALREADY);
+          if (message.length() <= desiredLength) {
+            this.socialManager.broadcastMessage(dbField, id, Settings.IMP.MAIN.STRINGS.LINK_SOCIAL_CMD_USAGE);
             return;
           }
-        } catch (SQLException e) {
-          e.printStackTrace();
+
+          try {
+            if (this.dao.queryForEq(dbField, id).size() != 0) {
+              this.socialManager.broadcastMessage(dbField, id, Settings.IMP.MAIN.STRINGS.LINK_ALREADY);
+              return;
+            }
+          } catch (SQLException e) {
+            e.printStackTrace();
+            return;
+          }
+
+          String account = message.substring(desiredLength).toLowerCase(Locale.ROOT);
+          if (!this.nicknamePattern.matcher(account).matches()) {
+            this.socialManager.broadcastMessage(dbField, id, Settings.IMP.MAIN.STRINGS.LINK_UNKNOWN_ACCOUNT);
+            return;
+          }
+
+          if (this.requestedMap.containsKey(id)) {
+            this.codeMap.remove(this.requestedMap.get(id));
+          } else {
+            this.requestedMap.put(id, account);
+            this.requestedReverseMap.put(account, new TempAccount(dbField, id));
+          }
+
+          int code = ThreadLocalRandom.current().nextInt(Settings.IMP.MAIN.CODE_LOWER_BOUND, Settings.IMP.MAIN.CODE_UPPER_BOUND);
+          this.codeMap.put(account, code);
+          this.socialManager.broadcastMessage(dbField, id, Settings.IMP.MAIN.STRINGS.LINK_CODE.replace("{CODE}", String.valueOf(code)));
+
           return;
         }
+      }
 
-        String account = message.substring(desiredLength).toLowerCase(Locale.ROOT);
-        if (!this.nicknamePattern.matcher(account).matches()) {
-          this.socialManager.broadcastMessage(dbField, id, Settings.IMP.MAIN.STRINGS.LINK_UNKNOWN_ACCOUNT);
+      for (String forceKeyboardCmd : Settings.IMP.MAIN.FORCE_KEYBOARD_CMDS) {
+        if (message.startsWith(forceKeyboardCmd)) {
+          this.socialManager.broadcastMessage(dbField, id, Settings.IMP.MAIN.STRINGS.KEYBOARD_RESTORED, this.keyboard);
           return;
         }
-
-        if (this.requestedMap.containsKey(id)) {
-          this.codeMap.remove(this.requestedMap.get(id));
-        } else {
-          this.requestedMap.put(id, account);
-          this.requestedReverseMap.put(account, new TempAccount(dbField, id));
-        }
-
-        int code = ThreadLocalRandom.current().nextInt(Settings.IMP.MAIN.CODE_LOWER_BOUND, Settings.IMP.MAIN.CODE_UPPER_BOUND);
-        this.codeMap.put(account, code);
-        this.socialManager.broadcastMessage(dbField, id, Settings.IMP.MAIN.STRINGS.LINK_CODE.replace("{CODE}", String.valueOf(code)));
-      } else if (message.startsWith(Settings.IMP.MAIN.FORCE_KEYBOARD_CMD)) {
-        this.socialManager.broadcastMessage(dbField, id, Settings.IMP.MAIN.STRINGS.KEYBOARD_RESTORED, this.keyboard);
       }
     });
 
