@@ -53,6 +53,9 @@ public class Settings extends YamlConfig {
     public String LINKAGE_MAIN_CMD = "addsocial";
     public List<String> LINKAGE_ALIAS_CMD = List.of("addvk", "addtg", "addds");
 
+    public String FORCE_UNLINK_MAIN_CMD = "forcesocialunlink";
+    public List<String> FORCE_UNLINK_ALIAS_CMD = List.of("forceunlink");
+
     public boolean ENABLE_NOTIFY = true;
 
     @Comment("Will the unlink button unregister all socials at once?")
@@ -147,6 +150,8 @@ public class Settings extends YamlConfig {
       public String LINK_SOCIAL_CMD_USAGE = "You didn't specify a nickname. Enter '!account link <nickname>'";
       public String LINK_UNKNOWN_ACCOUNT = "There is no account with this nickname";
       public String LINK_CODE = "🔑 Enter '/addsocial {CODE}' in game to complete account linking";
+
+      public String FORCE_UNLINK_CMD_USAGE = "{PRFX} Usage: /forcesocialunregister <username>";
 
       public String NOTIFY_LEAVE = "➖ You've left the server";
       public String NOTIFY_JOIN = "➕ You've joined the server {NL}🌐 IP: {IP} {LOCATION}{NL}You can block your account if that is not you";

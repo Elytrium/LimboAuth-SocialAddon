@@ -45,6 +45,7 @@ import net.elytrium.java.commons.mc.serialization.Serializers;
 import net.elytrium.limboauth.LimboAuth;
 import net.elytrium.limboauth.handler.AuthSessionHandler;
 import net.elytrium.limboauth.model.RegisteredPlayer;
+import net.elytrium.limboauth.socialaddon.command.ForceSocialUnlinkCommand;
 import net.elytrium.limboauth.socialaddon.command.ValidateLinkCommand;
 import net.elytrium.limboauth.socialaddon.listener.LimboAuthListener;
 import net.elytrium.limboauth.socialaddon.listener.ReloadListener;
@@ -461,7 +462,7 @@ public class Addon {
 
     this.nicknamePattern = Pattern.compile(net.elytrium.limboauth.Settings.IMP.MAIN.ALLOWED_NICKNAME_REGEX);
 
-    this.server.getEventManager().register(this, new LimboAuthListener(this.dao, this.socialManager,
+    this.server.getEventManager().register(this, new LimboAuthListener(this, this.dao, this.socialManager,
         this.keyboard, this.geoIp));
     this.server.getEventManager().register(this, new ReloadListener(() -> {
       try {
@@ -473,9 +474,26 @@ public class Addon {
 
     CommandManager commandManager = this.server.getCommandManager();
     commandManager.unregister(Settings.IMP.MAIN.LINKAGE_MAIN_CMD);
+    commandManager.unregister(Settings.IMP.MAIN.FORCE_UNLINK_MAIN_CMD);
+
     commandManager.register(Settings.IMP.MAIN.LINKAGE_MAIN_CMD,
         new ValidateLinkCommand(this, this.dao),
         Settings.IMP.MAIN.LINKAGE_ALIAS_CMD.toArray(new String[0]));
+    commandManager.register(Settings.IMP.MAIN.FORCE_UNLINK_MAIN_CMD,
+        new ForceSocialUnlinkCommand(this),
+        Settings.IMP.MAIN.FORCE_UNLINK_ALIAS_CMD.toArray(new String[0]));
+  }
+
+  public void unregisterPlayer(String nickname) {
+    try {
+      SocialPlayer player = this.dao.queryForId(nickname.toLowerCase(Locale.ROOT));
+      if (player != null) {
+        this.socialManager.unregisterHook(player);
+        this.dao.delete(player);
+      }
+    } catch (SQLException e) {
+      e.printStackTrace();
+    }
   }
 
   public int getCode(String nickname) {

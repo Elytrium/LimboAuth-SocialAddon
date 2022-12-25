@@ -40,7 +40,6 @@ import net.elytrium.limboauth.socialaddon.model.SocialPlayer;
 import net.elytrium.limboauth.socialaddon.social.AbstractSocial;
 import net.elytrium.limboauth.socialaddon.utils.GeoIp;
 import net.elytrium.limboauth.thirdparty.com.j256.ormlite.dao.Dao;
-import net.kyori.adventure.audience.MessageType;
 import net.kyori.adventure.text.Component;
 
 public class LimboAuthListener {
@@ -51,6 +50,7 @@ public class LimboAuthListener {
   private final Component blockedAccount = Addon.getSerializer().deserialize(Settings.IMP.MAIN.STRINGS.BLOCK_KICK_MESSAGE);
   private final Component askedKick = Addon.getSerializer().deserialize(Settings.IMP.MAIN.STRINGS.NOTIFY_ASK_KICK_MESSAGE);
 
+  private final Addon addon;
   private final Dao<SocialPlayer, String> socialPlayerDao;
   private final SocialManager socialManager;
 
@@ -60,8 +60,9 @@ public class LimboAuthListener {
 
   private final GeoIp geoIp;
 
-  public LimboAuthListener(Dao<SocialPlayer, String> socialPlayerDao, SocialManager socialManager,
+  public LimboAuthListener(Addon addon, Dao<SocialPlayer, String> socialPlayerDao, SocialManager socialManager,
                            List<List<AbstractSocial.ButtonItem>> keyboard, GeoIp geoIp) {
+    this.addon = addon;
     this.socialPlayerDao = socialPlayerDao;
     this.socialManager = socialManager;
     this.keyboard = keyboard;
@@ -110,11 +111,11 @@ public class LimboAuthListener {
 
       event.getPlayer()
           .getProxyPlayer()
-          .sendMessage(Addon.getSerializer().deserialize(Settings.IMP.MAIN.STRINGS.NOTIFY_ASK_VALIDATE_GAME), MessageType.SYSTEM);
+          .sendMessage(Addon.getSerializer().deserialize(Settings.IMP.MAIN.STRINGS.NOTIFY_ASK_VALIDATE_GAME));
     }
 
     if (player == null && !Settings.IMP.MAIN.STRINGS.LINK_ANNOUNCEMENT.isEmpty()) {
-      proxyPlayer.sendMessage(Addon.getSerializer().deserialize(Settings.IMP.MAIN.STRINGS.LINK_ANNOUNCEMENT), MessageType.SYSTEM);
+      proxyPlayer.sendMessage(Addon.getSerializer().deserialize(Settings.IMP.MAIN.STRINGS.LINK_ANNOUNCEMENT));
     }
   }
 
@@ -123,7 +124,7 @@ public class LimboAuthListener {
     if (!Settings.IMP.MAIN.STRINGS.LINK_ANNOUNCEMENT.isEmpty()) {
       event.getPlayer()
           .getProxyPlayer()
-          .sendMessage(Addon.getSerializer().deserialize(Settings.IMP.MAIN.STRINGS.LINK_ANNOUNCEMENT), MessageType.SYSTEM);
+          .sendMessage(Addon.getSerializer().deserialize(Settings.IMP.MAIN.STRINGS.LINK_ANNOUNCEMENT));
     }
   }
 
@@ -156,15 +157,7 @@ public class LimboAuthListener {
 
   @Subscribe
   public void onUnregister(AuthUnregisterEvent event) {
-    try {
-      SocialPlayer player = this.socialPlayerDao.queryForId(event.getNickname().toLowerCase(Locale.ROOT));
-      if (player != null) {
-        this.socialManager.unregisterHook(player);
-        this.socialPlayerDao.delete(player);
-      }
-    } catch (SQLException e) {
-      e.printStackTrace();
-    }
+    this.addon.unregisterPlayer(event.getNickname());
   }
 
   @Subscribe
