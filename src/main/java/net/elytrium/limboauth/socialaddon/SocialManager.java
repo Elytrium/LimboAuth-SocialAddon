@@ -21,10 +21,8 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.function.BiConsumer;
-import java.util.function.BiFunction;
 import net.elytrium.limboauth.socialaddon.model.SocialPlayer;
 import net.elytrium.limboauth.socialaddon.social.AbstractSocial;
-import net.elytrium.limboauth.socialaddon.social.SocialButtonListener;
 import net.elytrium.limboauth.socialaddon.social.SocialInitializationException;
 import net.elytrium.limboauth.socialaddon.social.SocialMessageListener;
 
@@ -34,11 +32,17 @@ public class SocialManager {
   private final LinkedList<SocialMessageListener> messageEvents = new LinkedList<>();
   private final HashMap<String, BiConsumer<String, Long>> buttonEvents = new HashMap<>();
 
-  @SafeVarargs
-  public SocialManager(BiFunction<SocialMessageListener, SocialButtonListener, AbstractSocial>... socialList) {
+  public SocialManager(AbstractSocial.Constructor... socialList) {
     this.socialList = new LinkedList<>();
-    for (BiFunction<SocialMessageListener, SocialButtonListener, AbstractSocial> function : socialList) {
-      this.socialList.add(function.apply(this::onMessageReceived, this::onButtonClicked));
+    for (AbstractSocial.Constructor function : socialList) {
+      try {
+        AbstractSocial social = function.newInstance(this::onMessageReceived, this::onButtonClicked);
+        if (social.isEnabled()) {
+          this.socialList.add(social);
+        }
+      } catch (SocialInitializationException e) {
+        e.printStackTrace();
+      }
     }
   }
 
@@ -64,36 +68,28 @@ public class SocialManager {
     this.buttonEvents.remove(id);
   }
 
-  public void init() {
-    this.socialList.stream().filter(AbstractSocial::isEnabled).forEach(abstractSocial -> {
+  public void start() {
+    for (AbstractSocial social : this.socialList) {
       try {
-        abstractSocial.init();
+        social.start();
       } catch (SocialInitializationException e) {
         e.printStackTrace();
       }
-    });
-  }
-
-  public void clear() {
-    this.stop();
-    this.messageEvents.clear();
-    this.buttonEvents.clear();
+    }
   }
 
   public void stop() {
-    this.socialList.stream().filter(AbstractSocial::isEnabled).forEach(AbstractSocial::stop);
+    this.socialList.forEach(AbstractSocial::stop);
   }
 
   public void unregisterHook(SocialPlayer player) {
     this.socialList.stream()
-        .filter(AbstractSocial::isEnabled)
         .filter(e -> e.canSend(player))
         .forEach(e -> e.onPlayerRemoved(player));
   }
 
   public void unregisterHook(String dbField, SocialPlayer player) {
     this.socialList.stream()
-        .filter(AbstractSocial::isEnabled)
         .filter(e -> e.canSend(player))
         .filter(e -> e.getDbField().equals(dbField))
         .forEach(e -> e.onPlayerRemoved(player));
@@ -107,14 +103,12 @@ public class SocialManager {
 
   public void broadcastMessage(SocialPlayer player, String message, List<List<AbstractSocial.ButtonItem>> item) {
     this.socialList.stream()
-        .filter(AbstractSocial::isEnabled)
         .filter(e -> e.canSend(player))
         .forEach(e -> e.sendMessage(player, message, item));
   }
 
   public void broadcastMessage(SocialPlayer player, String message) {
     this.socialList.stream()
-        .filter(AbstractSocial::isEnabled)
         .filter(e -> e.canSend(player))
         .forEach(e -> e.sendMessage(player, message));
   }

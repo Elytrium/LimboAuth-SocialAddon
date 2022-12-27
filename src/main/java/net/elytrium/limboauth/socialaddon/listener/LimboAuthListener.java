@@ -24,10 +24,11 @@ import com.velocitypowered.api.proxy.Player;
 import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 import net.elytrium.limboauth.event.AuthUnregisterEvent;
 import net.elytrium.limboauth.event.PostAuthorizationEvent;
 import net.elytrium.limboauth.event.PostRegisterEvent;
@@ -56,7 +57,7 @@ public class LimboAuthListener {
 
   private final List<List<AbstractSocial.ButtonItem>> yesNoButtons;
   private final List<List<AbstractSocial.ButtonItem>> keyboard;
-  private final HashMap<String, PostAuthorizationEvent> sessions = new HashMap<>();
+  private final Map<String, PostAuthorizationEvent> sessions = new ConcurrentHashMap<>();
 
   private final GeoIp geoIp;
 

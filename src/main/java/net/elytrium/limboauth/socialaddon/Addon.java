@@ -33,11 +33,12 @@ import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.io.File;
 import java.nio.file.Path;
 import java.sql.SQLException;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.regex.Pattern;
 import net.elytrium.java.commons.mc.serialization.Serializer;
@@ -93,14 +94,14 @@ public class Addon {
   private final Path dataDirectory;
   private final LimboAuth plugin;
 
-  private final SocialManager socialManager;
-  private final HashMap<String, Integer> codeMap;
-  private final HashMap<Long, String> requestedMap;
-  private final HashMap<String, TempAccount> requestedReverseMap;
+  private final Map<String, Integer> codeMap;
+  private final Map<Long, String> requestedMap;
+  private final Map<String, TempAccount> requestedReverseMap;
 
   private Dao<SocialPlayer, String> dao;
   private Pattern nicknamePattern;
 
+  private SocialManager socialManager;
   private List<List<AbstractSocial.ButtonItem>> keyboard;
   private GeoIp geoIp;
 
@@ -120,10 +121,9 @@ public class Addon {
     this.dataDirectory = dataDirectory;
 
     this.plugin = (LimboAuth) this.server.getPluginManager().getPlugin("limboauth").flatMap(PluginContainer::getInstance).orElseThrow();
-    this.socialManager = new SocialManager(DiscordSocial::new, TelegramSocial::new, VKSocial::new);
-    this.codeMap = new HashMap<>();
-    this.requestedMap = new HashMap<>();
-    this.requestedReverseMap = new HashMap<>();
+    this.codeMap = new ConcurrentHashMap<>();
+    this.requestedMap = new ConcurrentHashMap<>();
+    this.requestedReverseMap = new ConcurrentHashMap<>();
   }
 
   @Subscribe(order = PostOrder.NORMAL)
@@ -147,8 +147,12 @@ public class Addon {
 
     this.geoIp = Settings.IMP.MAIN.GEOIP.ENABLED ? new GeoIp(this.dataDirectory) : null;
 
-    this.socialManager.clear();
-    this.socialManager.init();
+    if (this.socialManager != null) {
+      this.socialManager.stop();
+    }
+
+    this.socialManager = new SocialManager(DiscordSocial::new, TelegramSocial::new, VKSocial::new);
+    this.socialManager.start();
 
     this.keyboard = List.of(
         List.of(
@@ -215,9 +219,18 @@ public class Addon {
       }
 
       for (String forceKeyboardCmd : Settings.IMP.MAIN.FORCE_KEYBOARD_CMDS) {
-        if (message.startsWith(forceKeyboardCmd)) {
-          this.socialManager.broadcastMessage(dbField, id, Settings.IMP.MAIN.STRINGS.KEYBOARD_RESTORED, this.keyboard);
-          return;
+        try {
+          if (message.startsWith(forceKeyboardCmd)) {
+            if (this.dao.queryBuilder().where().eq(dbField, id).countOf() == 0) {
+              this.socialManager.broadcastMessage(dbField, id, Settings.IMP.MAIN.START_REPLY);
+              return;
+            }
+
+            this.socialManager.broadcastMessage(dbField, id, Settings.IMP.MAIN.STRINGS.KEYBOARD_RESTORED, this.keyboard);
+            return;
+          }
+        } catch (SQLException e) {
+          throw new RuntimeException(e);
         }
       }
     });

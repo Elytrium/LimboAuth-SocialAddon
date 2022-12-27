@@ -41,7 +41,7 @@ public abstract class AbstractSocial {
 
   public abstract boolean isEnabled();
 
-  public abstract void init() throws SocialInitializationException;
+  public abstract void start() throws SocialInitializationException;
 
   public abstract void stop();
 
@@ -98,5 +98,9 @@ public abstract class AbstractSocial {
       LINK
     }
 
+  }
+
+  public interface Constructor {
+    AbstractSocial newInstance(SocialMessageListener onMessageReceived, SocialButtonListener onButtonClicked) throws SocialInitializationException;
   }
 }

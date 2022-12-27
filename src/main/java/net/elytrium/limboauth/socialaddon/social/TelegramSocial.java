@@ -36,25 +36,30 @@ import org.telegram.telegrambots.updatesreceivers.DefaultBotSession;
 
 public class TelegramSocial extends AbstractSocial {
 
+  private final TelegramBotsApi api;
   private TGBot bot;
   private BotSession botSession;
 
-  public TelegramSocial(SocialMessageListener onMessageReceived, SocialButtonListener onButtonClicked) {
+  public TelegramSocial(SocialMessageListener onMessageReceived, SocialButtonListener onButtonClicked) throws SocialInitializationException {
     super(onMessageReceived, onButtonClicked);
+
+    try {
+      this.api = new TelegramBotsApi(DefaultBotSession.class);
+    } catch (TelegramApiException e) {
+      throw new SocialInitializationException(e);
+    }
   }
 
   @Override
   public boolean isEnabled() {
     return Settings.IMP.MAIN.TELEGRAM.ENABLED;
   }
-
+  
   @Override
-  public void init() throws SocialInitializationException {
+  public void start() throws SocialInitializationException {
     try {
-      TelegramBotsApi telegramBotsApi = new TelegramBotsApi(DefaultBotSession.class);
-
       this.bot = new TGBot(Settings.IMP.MAIN.TELEGRAM.TOKEN, this::proceedMessage, this::proceedButton);
-      this.botSession = telegramBotsApi.registerBot(this.bot);
+      this.botSession = this.api.registerBot(this.bot);
     } catch (TelegramApiException e) {
       throw new SocialInitializationException(e);
     }

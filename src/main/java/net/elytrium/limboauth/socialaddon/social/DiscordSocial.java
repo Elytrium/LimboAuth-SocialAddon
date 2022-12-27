@@ -44,13 +44,7 @@ public class DiscordSocial extends AbstractSocial {
     super(onMessageReceived, onButtonClicked);
   }
 
-  @Override
-  public boolean isEnabled() {
-    return Settings.IMP.MAIN.DISCORD.ENABLED;
-  }
-
-  @Override
-  public void init() throws SocialInitializationException {
+  public void start() throws SocialInitializationException {
     try {
       this.jda = JDABuilder
           .create(Settings.IMP.MAIN.DISCORD.TOKEN, GatewayIntent.DIRECT_MESSAGES)
@@ -61,6 +55,11 @@ public class DiscordSocial extends AbstractSocial {
     } catch (LoginException e) {
       throw new SocialInitializationException(e);
     }
+  }
+
+  @Override
+  public boolean isEnabled() {
+    return Settings.IMP.MAIN.DISCORD.ENABLED;
   }
 
   @Override

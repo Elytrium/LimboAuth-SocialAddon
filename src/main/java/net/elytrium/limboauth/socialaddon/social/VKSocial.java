@@ -41,22 +41,12 @@ import net.elytrium.limboauth.socialaddon.Settings;
 import net.elytrium.limboauth.socialaddon.model.SocialPlayer;
 
 public class VKSocial extends AbstractSocial {
-  private VkApiClient vk;
-  private GroupActor actor;
+  private final VkApiClient vk;
+  private final GroupActor actor;
   private boolean polling;
 
-  public VKSocial(SocialMessageListener onMessageReceived, SocialButtonListener onButtonClicked) {
+  public VKSocial(SocialMessageListener onMessageReceived, SocialButtonListener onButtonClicked) throws SocialInitializationException {
     super(onMessageReceived, onButtonClicked);
-  }
-
-  @Override
-  public boolean isEnabled() {
-    return Settings.IMP.MAIN.VK.ENABLED;
-  }
-
-  @Override
-  public void init() {
-    this.stop();
 
     TransportClient transportClient = new HttpTransportClient();
     GroupActor tempActor = new GroupActor(0, Settings.IMP.MAIN.VK.TOKEN);
@@ -70,22 +60,14 @@ public class VKSocial extends AbstractSocial {
           .messageEvent(true)
           .messageNew(true)
           .execute();
-
-      this.polling = true;
-      new Thread(() -> {
-        while (this.polling) {
-          try {
-            this.startPolling();
-          } catch (LongPollServerKeyExpiredException ignored) {
-            // ignored
-          } catch (ClientException | ApiException e) {
-            e.printStackTrace();
-          }
-        }
-      }).start();
     } catch (ApiException | ClientException e) {
-      throw new RuntimeException(e);
+      throw new SocialInitializationException(e);
     }
+  }
+
+  @Override
+  public boolean isEnabled() {
+    return Settings.IMP.MAIN.VK.ENABLED;
   }
 
   @Override
@@ -93,41 +75,58 @@ public class VKSocial extends AbstractSocial {
     this.polling = false;
   }
 
-  public void startPolling() throws ClientException, ApiException {
-    GetLongPollServerResponse serverInfo = this.vk.groups().getLongPollServer(this.actor, this.actor.getGroupId()).execute();
-    LongPoll longPoll = new LongPoll(this.vk);
-
-    String server = serverInfo.getServer();
-    String key = serverInfo.getKey();
-    String ts = serverInfo.getTs();
-    while (this.polling) {
-      GetLongPollEventsResponse longPollResponse = longPoll.getEvents(server, key, ts).waitTime(25).execute();
-      ts = longPollResponse.getTs();
-
-      longPollResponse.getUpdates().forEach(e -> {
-        if (e.has("type") && e.has("object")) {
-          String type = e.get("type").getAsString();
-          JsonObject object = e.get("object").getAsJsonObject();
-
-          if (object != null) {
-            switch (type) {
-              case "message_new": {
-                this.onMessageNew(object);
-                break;
-              }
-              case "message_event": {
-                this.onMessageEvent(object);
-                break;
-              }
-              default: {
-                // ignored
-                break;
-              }
-            }
-          }
-        }
-      });
+  @Override
+  public void start() {
+    if (this.polling) {
+      return;
     }
+
+    this.polling = true;
+
+    new Thread(() -> {
+      while (this.polling) {
+        try {
+          GetLongPollServerResponse serverInfo = this.vk.groups().getLongPollServer(this.actor, this.actor.getGroupId()).execute();
+          LongPoll longPoll = new LongPoll(this.vk);
+
+          String server = serverInfo.getServer();
+          String key = serverInfo.getKey();
+          String ts = serverInfo.getTs();
+          while (this.polling) {
+            GetLongPollEventsResponse longPollResponse = longPoll.getEvents(server, key, ts).waitTime(25).execute();
+            ts = longPollResponse.getTs();
+
+            longPollResponse.getUpdates().forEach(e -> {
+              if (e.has("type") && e.has("object")) {
+                String type = e.get("type").getAsString();
+                JsonObject object = e.get("object").getAsJsonObject();
+
+                if (object != null) {
+                  switch (type) {
+                    case "message_new": {
+                      this.onMessageNew(object);
+                      break;
+                    }
+                    case "message_event": {
+                      this.onMessageEvent(object);
+                      break;
+                    }
+                    default: {
+                      // ignored
+                      break;
+                    }
+                  }
+                }
+              }
+            });
+          }
+        } catch (LongPollServerKeyExpiredException ignored) {
+          // ignored
+        } catch (ClientException | ApiException e) {
+          e.printStackTrace();
+        }
+      }
+    }).start();
   }
 
   @Override
