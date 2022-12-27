@@ -173,13 +173,14 @@ public class Addon {
     );
 
     this.socialManager.addMessageEvent((dbField, id, message) -> {
-      if (Settings.IMP.MAIN.START_MESSAGES.contains(message)) {
+      String lowercaseMessage = message.toLowerCase(Locale.ROOT);
+      if (Settings.IMP.MAIN.START_MESSAGES.contains(lowercaseMessage)) {
         this.socialManager.broadcastMessage(dbField, id, Settings.IMP.MAIN.START_REPLY);
         return;
       }
 
       for (String socialLinkCmd : Settings.IMP.MAIN.SOCIAL_LINK_CMDS) {
-        if (message.startsWith(socialLinkCmd)) {
+        if (lowercaseMessage.startsWith(socialLinkCmd)) {
           int desiredLength = socialLinkCmd.length() + 1;
 
           if (message.length() <= desiredLength) {
@@ -220,7 +221,7 @@ public class Addon {
 
       for (String forceKeyboardCmd : Settings.IMP.MAIN.FORCE_KEYBOARD_CMDS) {
         try {
-          if (message.startsWith(forceKeyboardCmd)) {
+          if (lowercaseMessage.startsWith(forceKeyboardCmd)) {
             if (this.dao.queryBuilder().where().eq(dbField, id).countOf() == 0) {
               this.socialManager.broadcastMessage(dbField, id, Settings.IMP.MAIN.START_REPLY);
               return;
