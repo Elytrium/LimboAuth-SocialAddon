@@ -42,27 +42,14 @@ import net.elytrium.limboauth.socialaddon.model.SocialPlayer;
 
 public class VKSocial extends AbstractSocial {
   private final VkApiClient vk;
-  private final GroupActor actor;
+  private GroupActor actor;
   private boolean polling;
 
-  public VKSocial(SocialMessageListener onMessageReceived, SocialButtonListener onButtonClicked) throws SocialInitializationException {
+  public VKSocial(SocialMessageListener onMessageReceived, SocialButtonListener onButtonClicked) {
     super(onMessageReceived, onButtonClicked);
 
     TransportClient transportClient = new HttpTransportClient();
-    GroupActor tempActor = new GroupActor(0, Settings.IMP.MAIN.VK.TOKEN);
-
-    try {
-      this.vk = new VkApiClient(transportClient);
-      int groupId = this.vk.groups().getByIdObjectLegacy(tempActor).groupIds(Collections.emptyList()).execute().get(0).getId();
-
-      this.actor = new GroupActor(groupId, Settings.IMP.MAIN.VK.TOKEN);
-      this.vk.groups().setLongPollSettings(this.actor, groupId).enabled(true)
-          .messageEvent(true)
-          .messageNew(true)
-          .execute();
-    } catch (ApiException | ClientException e) {
-      throw new SocialInitializationException(e);
-    }
+    this.vk = new VkApiClient(transportClient);
   }
 
   @Override
@@ -76,12 +63,25 @@ public class VKSocial extends AbstractSocial {
   }
 
   @Override
-  public void start() {
+  public void start() throws SocialInitializationException {
     if (this.polling) {
       return;
     }
 
     this.polling = true;
+
+    try {
+      GroupActor tempActor = new GroupActor(0, Settings.IMP.MAIN.VK.TOKEN);
+      int groupId = this.vk.groups().getByIdObjectLegacy(tempActor).groupIds(Collections.emptyList()).execute().get(0).getId();
+
+      this.actor = new GroupActor(groupId, Settings.IMP.MAIN.VK.TOKEN);
+      this.vk.groups().setLongPollSettings(this.actor, groupId).enabled(true)
+          .messageEvent(true)
+          .messageNew(true)
+          .execute();
+    } catch (ApiException | ClientException e) {
+      throw new SocialInitializationException(e);
+    }
 
     new Thread(() -> {
       while (this.polling) {
