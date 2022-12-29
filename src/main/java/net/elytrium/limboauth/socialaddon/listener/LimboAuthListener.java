@@ -108,7 +108,8 @@ public class LimboAuthListener {
       String ip = proxyPlayer.getRemoteAddress().getAddress().getHostAddress();
       this.socialManager.broadcastMessage(player, Settings.IMP.MAIN.STRINGS.NOTIFY_ASK_VALIDATE
           .replace("{IP}", ip).replace("{LOCATION}", Optional.ofNullable(this.geoIp)
-              .map(nonNullGeo -> "(" + nonNullGeo.getLocation(ip) + ")").orElse("")), this.yesNoButtons);
+              .map(nonNullGeo ->
+                  "(" + nonNullGeo.getLocation(ip) + ")").orElse("")), this.yesNoButtons, AbstractSocial.ButtonVisibility.PREFER_INLINE);
 
       event.getPlayer()
           .getProxyPlayer()

@@ -89,7 +89,7 @@ public class TelegramSocial extends AbstractSocial {
   }
 
   @Override
-  public void sendMessage(Long id, String content, List<List<ButtonItem>> buttons) {
+  public void sendMessage(Long id, String content, List<List<ButtonItem>> buttons, ButtonVisibility visibility) {
     ReplyKeyboard keyboard = new InlineKeyboardMarkup(buttons.stream().map(row -> row.stream().map(e -> {
 
       InlineKeyboardButton button = new InlineKeyboardButton();
@@ -103,8 +103,8 @@ public class TelegramSocial extends AbstractSocial {
   }
 
   @Override
-  public void sendMessage(SocialPlayer player, String content, List<List<ButtonItem>> buttons) {
-    this.sendMessage(player.getTelegramID(), content, buttons);
+  public void sendMessage(SocialPlayer player, String content, List<List<ButtonItem>> buttons, ButtonVisibility visibility) {
+    this.sendMessage(player.getTelegramID(), content, buttons, visibility);
   }
 
   @Override

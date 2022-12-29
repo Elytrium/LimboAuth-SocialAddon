@@ -102,9 +102,14 @@ public class SocialManager {
   }
 
   public void broadcastMessage(SocialPlayer player, String message, List<List<AbstractSocial.ButtonItem>> item) {
+    this.broadcastMessage(player, message, item, AbstractSocial.ButtonVisibility.DEFAULT);
+  }
+
+  public void broadcastMessage(SocialPlayer player, String message,
+                               List<List<AbstractSocial.ButtonItem>> item, AbstractSocial.ButtonVisibility visibility) {
     this.socialList.stream()
         .filter(e -> e.canSend(player))
-        .forEach(e -> e.sendMessage(player, message, item));
+        .forEach(e -> e.sendMessage(player, message, item, visibility));
   }
 
   public void broadcastMessage(SocialPlayer player, String message) {
@@ -114,9 +119,15 @@ public class SocialManager {
   }
 
   public void broadcastMessage(String dbField, Long id, String message, List<List<AbstractSocial.ButtonItem>> item) {
+    this.broadcastMessage(dbField, id, message, item, AbstractSocial.ButtonVisibility.DEFAULT);
+  }
+
+
+  public void broadcastMessage(String dbField, Long id, String message,
+                               List<List<AbstractSocial.ButtonItem>> item, AbstractSocial.ButtonVisibility visibility) {
     this.socialList.stream()
         .filter(e -> e.getDbField().equals(dbField))
-        .forEach(e -> e.sendMessage(id, message, item));
+        .forEach(e -> e.sendMessage(id, message, item, visibility));
   }
 
   public void broadcastMessage(String dbField, Long id, String message) {

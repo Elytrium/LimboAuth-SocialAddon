@@ -110,7 +110,7 @@ public class DiscordSocial extends AbstractSocial {
   }
 
   @Override
-  public void sendMessage(Long id, String content, List<List<ButtonItem>> buttons) {
+  public void sendMessage(Long id, String content, List<List<ButtonItem>> buttons, ButtonVisibility visibility) {
     User user = this.jda.retrieveUserById(id).complete();
 
     if (user == null) {
@@ -165,8 +165,8 @@ public class DiscordSocial extends AbstractSocial {
   }
 
   @Override
-  public void sendMessage(SocialPlayer player, String content, List<List<ButtonItem>> buttons) {
-    this.sendMessage(player.getDiscordID(), content, buttons);
+  public void sendMessage(SocialPlayer player, String content, List<List<ButtonItem>> buttons, ButtonVisibility visibility) {
+    this.sendMessage(player.getDiscordID(), content, buttons, visibility);
   }
 
   @Override

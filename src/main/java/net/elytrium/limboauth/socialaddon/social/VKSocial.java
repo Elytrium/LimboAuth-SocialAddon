@@ -145,7 +145,7 @@ public class VKSocial extends AbstractSocial {
   }
 
   @Override
-  public void sendMessage(Long id, String content, List<List<ButtonItem>> buttons) {
+  public void sendMessage(Long id, String content, List<List<ButtonItem>> buttons, ButtonVisibility visibility) {
     List<List<KeyboardButton>> vkButtons = buttons.stream().map(row -> row.stream().map(button -> {
       KeyboardButtonColor color;
       switch (button.getColor()) {
@@ -180,7 +180,7 @@ public class VKSocial extends AbstractSocial {
     try {
       Keyboard keyboard = new Keyboard()
           .setButtons(vkButtons)
-          .setInline(false)
+          .setInline(visibility == ButtonVisibility.PREFER_INLINE)
           .setOneTime(false);
 
       this.vk.messages()
@@ -198,8 +198,8 @@ public class VKSocial extends AbstractSocial {
   }
 
   @Override
-  public void sendMessage(SocialPlayer player, String content, List<List<ButtonItem>> buttons) {
-    this.sendMessage(player.getVkID(), content, buttons);
+  public void sendMessage(SocialPlayer player, String content, List<List<ButtonItem>> buttons, ButtonVisibility visibility) {
+    this.sendMessage(player.getVkID(), content, buttons, visibility);
   }
 
   @Override

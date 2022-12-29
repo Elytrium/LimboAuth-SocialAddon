@@ -52,16 +52,16 @@ public abstract class AbstractSocial {
   public abstract void onPlayerRemoved(SocialPlayer player);
 
   public void sendMessage(Long id, String content) {
-    this.sendMessage(id, content, Collections.emptyList());
+    this.sendMessage(id, content, Collections.emptyList(), ButtonVisibility.DEFAULT);
   }
 
-  public abstract void sendMessage(Long id, String content, List<List<ButtonItem>> buttons);
+  public abstract void sendMessage(Long id, String content, List<List<ButtonItem>> buttons, ButtonVisibility visibility);
 
   public void sendMessage(SocialPlayer player, String content) {
-    this.sendMessage(player, content, Collections.emptyList());
+    this.sendMessage(player, content, Collections.emptyList(), ButtonVisibility.DEFAULT);
   }
 
-  public abstract void sendMessage(SocialPlayer player, String content, List<List<ButtonItem>> buttons);
+  public abstract void sendMessage(SocialPlayer player, String content, List<List<ButtonItem>> buttons, ButtonVisibility visibility);
 
   public abstract boolean canSend(SocialPlayer player);
 
@@ -102,5 +102,12 @@ public abstract class AbstractSocial {
 
   public interface Constructor {
     AbstractSocial newInstance(SocialMessageListener onMessageReceived, SocialButtonListener onButtonClicked) throws SocialInitializationException;
+  }
+
+  public enum ButtonVisibility {
+
+    DEFAULT,
+    PREFER_INLINE,
+    PREFER_KEYBOARD
   }
 }
