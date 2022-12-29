@@ -76,6 +76,9 @@ public class Settings extends YamlConfig {
     public List<String> START_MESSAGES = List.of("/start", "Начать");
     public String START_REPLY = "Send '!account link <nickname>' to link your account";
 
+    @Comment("Addon will print all exceptions if this parameter is set to true.")
+    public boolean DEBUG = false;
+
     @Create
     public MAIN.VK VK;
 

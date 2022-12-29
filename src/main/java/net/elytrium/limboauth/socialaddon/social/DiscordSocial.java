@@ -151,11 +151,15 @@ public class DiscordSocial extends AbstractSocial {
             .setActionRows(actionRowList)
             .submit()
             .exceptionally(e -> {
-              e.printStackTrace();
+              if (Settings.IMP.MAIN.DEBUG) {
+                e.printStackTrace();
+              }
               return null;
             }))
         .exceptionally(e -> {
-          e.printStackTrace();
+          if (Settings.IMP.MAIN.DEBUG) {
+            e.printStackTrace();
+          }
           return null;
         });
   }

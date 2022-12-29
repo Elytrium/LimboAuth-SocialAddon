@@ -191,7 +191,9 @@ public class VKSocial extends AbstractSocial {
           .randomId(ThreadLocalRandom.current().nextInt())
           .execute();
     } catch (ClientException | ApiException e) {
-      throw new RuntimeException(e);
+      if (Settings.IMP.MAIN.DEBUG) {
+        e.printStackTrace();
+      }
     }
   }
 

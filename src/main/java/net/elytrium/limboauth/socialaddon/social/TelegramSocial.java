@@ -31,6 +31,7 @@ import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMa
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.ReplyKeyboard;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
+import org.telegram.telegrambots.meta.exceptions.TelegramApiRequestException;
 import org.telegram.telegrambots.meta.generics.BotSession;
 import org.telegram.telegrambots.updatesreceivers.DefaultBotSession;
 
@@ -54,7 +55,7 @@ public class TelegramSocial extends AbstractSocial {
   public boolean isEnabled() {
     return Settings.IMP.MAIN.TELEGRAM.ENABLED;
   }
-  
+
   @Override
   public void start() throws SocialInitializationException {
     try {
@@ -141,6 +142,10 @@ public class TelegramSocial extends AbstractSocial {
 
       try {
         this.sendApiMethod(sendMessage);
+      } catch (TelegramApiRequestException e) {
+        if (Settings.IMP.MAIN.DEBUG) {
+          e.printStackTrace();
+        }
       } catch (TelegramApiException e) {
         e.printStackTrace();
       }
