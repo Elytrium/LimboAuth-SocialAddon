@@ -49,17 +49,13 @@ public class ValidateLinkCommand implements SimpleCommand {
       Player player = (Player) source;
 
       if (args.length == 0) {
-        source.sendMessage(Addon.getSerializer()
-            .deserialize(Settings.IMP.MAIN.STRINGS.LINK_CMD_USAGE.replace("{NICKNAME}", player.getUsername())));
+        this.sendUsage(player);
       } else {
         try {
           String username = player.getUsername().toLowerCase(Locale.ROOT);
-          int code = Integer.parseInt(args[0]);
-
-          if (this.addon.hasCode(username)) {
-            int validCode = this.addon.getCode(username);
-
-            if (code == validCode) {
+          Integer validCode = this.addon.getCode(username);
+          if (validCode != null) {
+            if (validCode == Integer.parseInt(args[0])) {
               Addon.TempAccount tempAccount = this.addon.getTempAccount(username);
               if (this.socialDao.queryForId(username) == null) {
                 this.socialDao.create(new SocialPlayer(username));

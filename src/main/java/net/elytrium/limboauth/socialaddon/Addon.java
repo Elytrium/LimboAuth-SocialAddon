@@ -95,7 +95,6 @@ public class Addon {
   private final LimboAuth plugin;
 
   private final Map<String, Integer> codeMap;
-  private final Map<Long, String> requestedMap;
   private final Map<String, TempAccount> requestedReverseMap;
 
   private Dao<SocialPlayer, String> dao;
@@ -122,7 +121,6 @@ public class Addon {
 
     this.plugin = (LimboAuth) this.server.getPluginManager().getPlugin("limboauth").flatMap(PluginContainer::getInstance).orElseThrow();
     this.codeMap = new ConcurrentHashMap<>();
-    this.requestedMap = new ConcurrentHashMap<>();
     this.requestedReverseMap = new ConcurrentHashMap<>();
   }
 
@@ -204,15 +202,9 @@ public class Addon {
             return;
           }
 
-          if (this.requestedMap.containsKey(id)) {
-            this.codeMap.remove(this.requestedMap.get(id));
-          } else {
-            this.requestedMap.put(id, account);
-            this.requestedReverseMap.put(account, new TempAccount(dbField, id));
-          }
-
           int code = ThreadLocalRandom.current().nextInt(Settings.IMP.MAIN.CODE_LOWER_BOUND, Settings.IMP.MAIN.CODE_UPPER_BOUND);
           this.codeMap.put(account, code);
+          this.requestedReverseMap.put(account, new TempAccount(dbField, id));
           this.socialManager.broadcastMessage(dbField, id, Settings.IMP.MAIN.STRINGS.LINK_CODE.replace("{CODE}", String.valueOf(code)));
 
           return;
@@ -516,7 +508,7 @@ public class Addon {
     }
   }
 
-  public int getCode(String nickname) {
+  public Integer getCode(String nickname) {
     return this.codeMap.get(nickname);
   }
 
@@ -525,13 +517,8 @@ public class Addon {
   }
 
   public void removeCode(String nickname) {
-    this.requestedMap.remove(this.requestedReverseMap.get(nickname).getId());
     this.requestedReverseMap.remove(nickname);
     this.codeMap.remove(nickname);
-  }
-
-  public boolean hasCode(String nickname) {
-    return this.codeMap.containsKey(nickname);
   }
 
   public SocialManager getSocialManager() {
