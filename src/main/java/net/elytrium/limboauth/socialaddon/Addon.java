@@ -396,6 +396,15 @@ public class Addon {
         }
 
         SocialPlayer player = socialPlayerList.get(0);
+
+        if (Settings.IMP.MAIN.PROHIBIT_PREMIUM_RESTORE
+            && this.plugin.isPremiumInternal(player.getLowercaseNickname()).getState() != LimboAuth.PremiumState.CRACKED) {
+          this.socialManager.broadcastMessage(dbField, id,
+              Settings.IMP.MAIN.STRINGS.RESTORE_MSG_PREMIUM.replace("{NICKNAME}", player.getLowercaseNickname()),
+              this.keyboard);
+          return;
+        }
+
         Dao<RegisteredPlayer, String> playerDao = this.plugin.getPlayerDao();
 
         String newPassword = Long.toHexString(Double.doubleToLongBits(Math.random()));
@@ -411,7 +420,7 @@ public class Addon {
               this.keyboard);
         } else {
           this.socialManager.broadcastMessage(dbField, id,
-              Settings.IMP.MAIN.STRINGS.RESTORE_MSG_NO_USER.replace("{NICKNAME}", player.getLowercaseNickname()),
+              Settings.IMP.MAIN.STRINGS.RESTORE_MSG_PREMIUM.replace("{NICKNAME}", player.getLowercaseNickname()),
               this.keyboard);
         }
       } catch (SQLException e) {
