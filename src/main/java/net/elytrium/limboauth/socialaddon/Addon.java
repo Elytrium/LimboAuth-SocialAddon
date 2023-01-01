@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Elytrium
+ * Copyright (C) 2022 - 2023 Elytrium
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -71,7 +71,10 @@ import org.slf4j.Logger;
     id = "limboauth-social-addon",
     name = "LimboAuth Social Addon",
     version = BuildConstants.ADDON_VERSION,
-    authors = {"hevav", "mdxd44"},
+    url = "https://elytrium.net/",
+    authors = {
+        "Elytrium (https://elytrium.net/)",
+    },
     dependencies = {
         @Dependency(id = "limboauth")
     }
