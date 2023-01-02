@@ -22,12 +22,16 @@ import net.elytrium.limboauth.thirdparty.com.j256.ormlite.field.DatabaseField;
 import net.elytrium.limboauth.thirdparty.com.j256.ormlite.table.DatabaseTable;
 
 @SuppressWarnings("unused")
-@DatabaseTable(tableName = "SOCIAL")
+@DatabaseTable(tableName = SocialPlayer.TABLE_NAME)
 public class SocialPlayer {
+  public static final String TABLE_NAME = "SOCIAL";
   public static final String LOWERCASE_NICKNAME_FIELD = "LOWERCASENICKNAME";
   public static final String VK_DB_FIELD = "VK_ID";
   public static final String TELEGRAM_DB_FIELD = "TELEGRAM_ID";
   public static final String DISCORD_DB_FIELD = "DISCORD_ID";
+  public static final String BLOCKED_FIELD = "BLOCKED";
+  public static final String TOTP_ENABLED_FIELD = "TOTP_ENABLED";
+  public static final String NOTIFY_ENABLED_FIELD = "NOTIFY_ENABLED";
 
   @DatabaseField(id = true, columnName = LOWERCASE_NICKNAME_FIELD)
   private String lowercaseNickname;
@@ -41,13 +45,13 @@ public class SocialPlayer {
   @DatabaseField(columnName = DISCORD_DB_FIELD)
   private Long discordID;
 
-  @DatabaseField(columnName = "BLOCKED")
+  @DatabaseField(columnName = BLOCKED_FIELD)
   private Boolean blocked = Settings.IMP.MAIN.DEFAULT_BLOCKED;
 
-  @DatabaseField(columnName = "TOTP_ENABLED")
+  @DatabaseField(columnName = TOTP_ENABLED_FIELD)
   private Boolean totpEnabled = Settings.IMP.MAIN.DEFAULT_TOTP_ENABLED;
 
-  @DatabaseField(columnName = "NOTIFY_ENABLED")
+  @DatabaseField(columnName = NOTIFY_ENABLED_FIELD)
   private Boolean notifyEnabled = Settings.IMP.MAIN.DEFAULT_NOTIFY_ENABLED;
 
   public SocialPlayer(String lowercaseNickname) {

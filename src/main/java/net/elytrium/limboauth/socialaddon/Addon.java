@@ -413,8 +413,8 @@ public class Addon {
         String newPassword = Long.toHexString(Double.doubleToLongBits(Math.random()));
 
         UpdateBuilder<RegisteredPlayer, String> updateBuilder = playerDao.updateBuilder();
-        updateBuilder.where().eq("LOWERCASENICKNAME", player.getLowercaseNickname());
-        updateBuilder.updateColumnValue("HASH", AuthSessionHandler.genHash(newPassword));
+        updateBuilder.where().eq(RegisteredPlayer.LOWERCASE_NICKNAME_FIELD, player.getLowercaseNickname());
+        updateBuilder.updateColumnValue(RegisteredPlayer.HASH_FIELD, AuthSessionHandler.genHash(newPassword));
         boolean updated = updateBuilder.update() != 0;
 
         if (updated) {
