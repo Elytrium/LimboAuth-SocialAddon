@@ -83,6 +83,12 @@ public class Settings extends YamlConfig {
     @Comment("Prohibit premium users from changing their password via the restore button.")
     public boolean PROHIBIT_PREMIUM_RESTORE = true;
 
+    @Comment({
+        "NO | YES - with the option disabled",
+        "YES | NO - with the option enabled",
+    })
+    public boolean REVERSE_YES_NO_BUTTONS = false;
+
     @Create
     public MAIN.VK VK;
 

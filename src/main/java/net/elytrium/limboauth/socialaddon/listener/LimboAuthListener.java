@@ -22,8 +22,6 @@ import com.velocitypowered.api.event.connection.DisconnectEvent;
 import com.velocitypowered.api.event.player.PlayerChooseInitialServerEvent;
 import com.velocitypowered.api.proxy.Player;
 import java.sql.SQLException;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -68,12 +66,21 @@ public class LimboAuthListener {
     this.socialManager = socialManager;
     this.keyboard = keyboard;
     this.geoIp = geoIp;
-    this.yesNoButtons = Collections.singletonList(
-        Arrays.asList(
-            new AbstractSocial.ButtonItem(ASK_NO_BTN, Settings.IMP.MAIN.STRINGS.NOTIFY_ASK_NO, AbstractSocial.ButtonItem.Color.RED),
-            new AbstractSocial.ButtonItem(ASK_YES_BTN, Settings.IMP.MAIN.STRINGS.NOTIFY_ASK_YES, AbstractSocial.ButtonItem.Color.GREEN)
-        )
-    );
+    if (Settings.IMP.MAIN.REVERSE_YES_NO_BUTTONS) {
+      this.yesNoButtons = List.of(
+          List.of(
+              new AbstractSocial.ButtonItem(ASK_YES_BTN, Settings.IMP.MAIN.STRINGS.NOTIFY_ASK_YES, AbstractSocial.ButtonItem.Color.GREEN),
+              new AbstractSocial.ButtonItem(ASK_NO_BTN, Settings.IMP.MAIN.STRINGS.NOTIFY_ASK_NO, AbstractSocial.ButtonItem.Color.RED)
+          )
+      );
+    } else {
+      this.yesNoButtons = List.of(
+          List.of(
+              new AbstractSocial.ButtonItem(ASK_NO_BTN, Settings.IMP.MAIN.STRINGS.NOTIFY_ASK_NO, AbstractSocial.ButtonItem.Color.RED),
+              new AbstractSocial.ButtonItem(ASK_YES_BTN, Settings.IMP.MAIN.STRINGS.NOTIFY_ASK_YES, AbstractSocial.ButtonItem.Color.GREEN)
+          )
+      );
+    }
 
     this.socialManager.removeButtonEvent(ASK_NO_BTN);
     this.socialManager.removeButtonEvent(ASK_YES_BTN);
