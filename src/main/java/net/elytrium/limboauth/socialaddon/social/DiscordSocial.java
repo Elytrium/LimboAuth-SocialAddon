@@ -19,15 +19,16 @@ package net.elytrium.limboauth.socialaddon.social;
 
 import java.util.List;
 import java.util.stream.Collectors;
-import javax.security.auth.login.LoginException;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
 import net.dv8tion.jda.api.entities.Role;
 import net.dv8tion.jda.api.entities.User;
 import net.dv8tion.jda.api.events.interaction.component.ButtonInteractionEvent;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
+import net.dv8tion.jda.api.exceptions.InvalidTokenException;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import net.dv8tion.jda.api.interactions.components.ActionRow;
+import net.dv8tion.jda.api.interactions.components.LayoutComponent;
 import net.dv8tion.jda.api.interactions.components.buttons.Button;
 import net.dv8tion.jda.api.interactions.components.buttons.ButtonStyle;
 import net.dv8tion.jda.api.requests.GatewayIntent;
@@ -48,11 +49,14 @@ public class DiscordSocial extends AbstractSocial {
     try {
       this.jda = JDABuilder
           .create(Settings.IMP.MAIN.DISCORD.TOKEN, GatewayIntent.DIRECT_MESSAGES)
-          .disableCache(CacheFlag.ACTIVITY, CacheFlag.VOICE_STATE, CacheFlag.EMOTE, CacheFlag.CLIENT_STATUS, CacheFlag.ONLINE_STATUS)
+          .disableCache(
+              CacheFlag.ACTIVITY, CacheFlag.VOICE_STATE, CacheFlag.EMOJI, CacheFlag.CLIENT_STATUS, CacheFlag.ONLINE_STATUS, CacheFlag.STICKER,
+              CacheFlag.FORUM_TAGS
+          )
           .build();
 
       this.jda.addEventListener(new Listener(this::proceedMessage, this::proceedButton));
-    } catch (LoginException e) {
+    } catch (InvalidTokenException e) {
       throw new SocialInitializationException(e);
     }
   }
@@ -86,6 +90,7 @@ public class DiscordSocial extends AbstractSocial {
 
   @SuppressWarnings("ConstantConditions")
   private void parseCommands(Long id, List<String> commands) {
+    User user = this.jda.getUserById(id);
     for (String argsString : commands) {
       String[] args = argsString.split(" ");
       String command = args[0];
@@ -93,13 +98,13 @@ public class DiscordSocial extends AbstractSocial {
         case "addrole": {
           long roleId = Long.parseLong(args[1]);
           Role role = this.jda.getRoleById(roleId);
-          role.getGuild().addRoleToMember(id, role).queue();
+          role.getGuild().addRoleToMember(user, role).queue();
           break;
         }
         case "remrole": {
           long roleId = Long.parseLong(args[1]);
           Role role = this.jda.getRoleById(roleId);
-          role.getGuild().removeRoleFromMember(id, role).queue();
+          role.getGuild().removeRoleFromMember(user, role).queue();
           break;
         }
         default: {
@@ -117,7 +122,7 @@ public class DiscordSocial extends AbstractSocial {
       return;
     }
 
-    List<ActionRow> actionRowList = buttons.stream().map(row ->
+    List<LayoutComponent> actionRowList = buttons.stream().map(row ->
         ActionRow.of(row.stream().map(e -> {
           ButtonStyle style;
 
@@ -148,7 +153,7 @@ public class DiscordSocial extends AbstractSocial {
         .submit()
         .thenAccept(privateChannel -> privateChannel
             .sendMessage(content)
-            .setActionRows(actionRowList)
+            .setComponents(actionRowList)
             .submit()
             .exceptionally(e -> {
               if (Settings.IMP.MAIN.DEBUG) {
