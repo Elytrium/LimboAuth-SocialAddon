@@ -28,7 +28,6 @@ import net.elytrium.limboauth.socialaddon.Addon;
 import net.elytrium.limboauth.socialaddon.Settings;
 import net.elytrium.limboauth.socialaddon.model.SocialPlayer;
 import net.elytrium.limboauth.thirdparty.com.j256.ormlite.dao.Dao;
-import net.elytrium.limboauth.thirdparty.com.j256.ormlite.stmt.UpdateBuilder;
 
 public class ValidateLinkCommand implements SimpleCommand {
 
@@ -57,17 +56,7 @@ public class ValidateLinkCommand implements SimpleCommand {
           if (validCode != null) {
             if (validCode == Integer.parseInt(args[0])) {
               Addon.TempAccount tempAccount = this.addon.getTempAccount(username);
-              if (this.socialDao.queryForId(username) == null) {
-                this.socialDao.create(new SocialPlayer(username));
-              } else if (!Settings.IMP.MAIN.ALLOW_ACCOUNT_RELINK) {
-                this.addon.getSocialManager().broadcastMessage(tempAccount.getDbField(), tempAccount.getId(), Settings.IMP.MAIN.STRINGS.LINK_ALREADY);
-                return;
-              }
-
-              UpdateBuilder<SocialPlayer, String> updateBuilder = this.socialDao.updateBuilder();
-              updateBuilder.where().eq(SocialPlayer.LOWERCASE_NICKNAME_FIELD, username);
-              updateBuilder.updateColumnValue(tempAccount.getDbField(), tempAccount.getId());
-              updateBuilder.update();
+              this.addon.linkSocial(username, tempAccount.getDbField(), tempAccount.getId());
 
               Settings.IMP.MAIN.AFTER_LINKAGE_COMMANDS.forEach(command ->
                   this.addon.getServer().getCommandManager().executeAsync(p -> Tristate.TRUE,

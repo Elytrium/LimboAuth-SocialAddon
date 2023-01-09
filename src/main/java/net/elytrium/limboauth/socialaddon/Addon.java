@@ -220,6 +220,9 @@ public class Addon {
           );
 
           this.plugin.getPlayerDao().create(player);
+
+          this.linkSocial(lowercaseNickname, dbField, id);
+
           this.socialManager.broadcastMessage(dbField, id,
               Settings.IMP.MAIN.STRINGS.REGISTER_SUCCESS.replace("{PASSWORD}", newPassword));
         }
@@ -537,6 +540,20 @@ public class Addon {
     } catch (SQLException e) {
       throw new IllegalStateException(e);
     }
+  }
+
+  public void linkSocial(String lowercaseNickname, String dbField, Long id) throws SQLException {
+    if (this.dao.queryForId(lowercaseNickname) == null) {
+      this.dao.create(new SocialPlayer(lowercaseNickname));
+    } else if (!Settings.IMP.MAIN.ALLOW_ACCOUNT_RELINK) {
+      this.socialManager.broadcastMessage(dbField, id, Settings.IMP.MAIN.STRINGS.LINK_ALREADY);
+      return;
+    }
+
+    UpdateBuilder<SocialPlayer, String> updateBuilder = this.dao.updateBuilder();
+    updateBuilder.where().eq(SocialPlayer.LOWERCASE_NICKNAME_FIELD, lowercaseNickname);
+    updateBuilder.updateColumnValue(dbField, id);
+    updateBuilder.update();
   }
 
   public Integer getCode(String nickname) {
