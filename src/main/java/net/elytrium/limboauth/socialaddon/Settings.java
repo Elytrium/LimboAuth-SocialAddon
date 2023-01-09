@@ -123,7 +123,7 @@ public class Settings extends YamlConfig {
     }
 
     @Create
-    public MAIN.STRINGS STRINGS;
+    public MAIN.GEOIP GEOIP;
 
     @Comment({
         "GeoIP is an offline database providing approximate IP address locations",
@@ -132,11 +132,9 @@ public class Settings extends YamlConfig {
     public static class GEOIP {
       public boolean ENABLED = false;
       @Comment({
-          "Available: city, country",
-          "City precision will involve both the country and the city displayed",
-          "Country will involve only the country to be displayed"
+          "Available placeholders: {CITY}, {COUNTRY}"
       })
-      public String PRECISION = "country";
+      public String FORMAT = "country";
       @Comment("ISO 639-1")
       public String LOCALE = "en";
       @Comment({
@@ -150,10 +148,13 @@ public class Settings extends YamlConfig {
       })
       public long UPDATE_INTERVAL = 1209600000L;
       public String DEFAULT_VALUE = "Unknown";
+
+      public String MMDB_CITY_DOWNLOAD = "https://download.maxmind.com/app/geoip_download?edition_id=GeoLite2-City&license_key={LICENSE_KEY}&suffix=tar.gz";
+      public String MMDB_COUNTRY_DOWNLOAD = "https://download.maxmind.com/app/geoip_download?edition_id=GeoLite2-Country&license_key={LICENSE_KEY}&suffix=tar.gz";
     }
 
     @Create
-    public MAIN.GEOIP GEOIP;
+    public MAIN.STRINGS STRINGS;
 
     public static class STRINGS {
 

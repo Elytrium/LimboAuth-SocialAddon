@@ -37,73 +37,62 @@ import org.apache.commons.io.IOUtils;
 
 public class GeoIp {
 
-  private static final String GEOIP_CITY_DOWNLOAD = "https://download.maxmind.com/app/geoip_download"
-      + "?edition_id=GeoLite2-City&license_key=%s&suffix=tar.gz";
-  private static final String GEOIP_COUNTRY_DOWNLOAD = "https://download.maxmind.com/app/geoip_download"
-      + "?edition_id=GeoLite2-Country&license_key=%s&suffix=tar.gz";
-  private final Path dataPath;
-
-  private DatabaseReader reader;
+  private final DatabaseReader reader;
+  private final boolean cityEnabled;
 
   public GeoIp(Path dataPath) {
-    this.dataPath = dataPath;
+    this.cityEnabled = Settings.IMP.MAIN.GEOIP.FORMAT.contains("{CITY}");
 
     try {
-      this.initializeGeoIp();
-    } catch (Exception e) {
+      Path path = dataPath.resolve(this.cityEnabled ? "city.mmdb" : "country.mmdb");
+      if (!Files.exists(path) || (System.currentTimeMillis() - path.toFile().lastModified())
+          > Settings.IMP.MAIN.GEOIP.UPDATE_INTERVAL) {
+        String uri = (this.cityEnabled
+            ? Settings.IMP.MAIN.GEOIP.MMDB_CITY_DOWNLOAD : Settings.IMP.MAIN.GEOIP.MMDB_COUNTRY_DOWNLOAD)
+            .replace("{LICENSE_KEY}", Settings.IMP.MAIN.GEOIP.LICENSE_KEY);
+
+        ByteArrayInputStream byteStream = new ByteArrayInputStream(IOUtils.toByteArray(new URL(uri).openStream()));
+        try (GZIPInputStream gzip = new GZIPInputStream(byteStream);
+             TarArchiveInputStream tarInputStream = new TarArchiveInputStream(gzip)) {
+          TarArchiveEntry entry;
+          byte[] b = new byte[4096];
+          while ((entry = tarInputStream.getNextTarEntry()) != null) {
+            if (entry.getName().endsWith("mmdb")) {
+              Files.deleteIfExists(path);
+
+              try (FileOutputStream fos = new FileOutputStream(path.toFile())) {
+                int r;
+                while ((r = tarInputStream.read(b)) != -1) {
+                  fos.write(b, 0, r);
+                }
+              }
+            }
+          }
+        }
+      }
+
+      this.reader = new DatabaseReader.Builder(path.toFile()).withCache(new CHMCache(4096 * 4)).build();
+    } catch (IOException e) {
       throw new IllegalStateException(e);
     }
   }
 
-  private void initializeGeoIp() throws Exception {
-    Path path = this.dataPath.resolve("geo.mmdb");
-    if (!Files.exists(path)) {
-      this.downloadDatabase();
-    }
-    if ((System.currentTimeMillis() - path.toFile().lastModified()) > Settings.IMP.MAIN.GEOIP.UPDATE_INTERVAL) {
-      this.downloadDatabase();
-    }
-
-    this.reader = new DatabaseReader.Builder(path.toFile()).withCache(new CHMCache(4096 * 4)).build();
-  }
-
-  private void downloadDatabase() throws Exception {
-    String uri = String.format(Settings.IMP.MAIN.GEOIP.PRECISION.equalsIgnoreCase("city")
-        ? GEOIP_CITY_DOWNLOAD : GEOIP_COUNTRY_DOWNLOAD, Settings.IMP.MAIN.GEOIP.LICENSE_KEY);
-
-    ByteArrayInputStream byteStream = new ByteArrayInputStream(IOUtils.toByteArray(new URL(uri).openStream()));
-    try (GZIPInputStream gzip = new GZIPInputStream(byteStream);
-         TarArchiveInputStream tarInputStream = new TarArchiveInputStream(gzip)) {
-      TarArchiveEntry entry;
-      byte[] b = new byte[4096];
-      while ((entry = tarInputStream.getNextTarEntry()) != null) {
-        if (entry.getName().endsWith("mmdb")) {
-          Path path = this.dataPath.resolve("geo.mmdb");
-          Files.deleteIfExists(path);
-
-          try (FileOutputStream fos = new FileOutputStream(path.toFile())) {
-            int r;
-            while ((r = tarInputStream.read(b)) != -1) {
-              fos.write(b, 0, r);
-            }
-          }
-
-        }
-      }
-    }
-  }
 
   public String getLocation(String ip) {
     try {
       InetAddress address = InetAddress.getByName(ip);
-      if (Settings.IMP.MAIN.GEOIP.PRECISION.equalsIgnoreCase("city")) {
+      String city = "";
+      String country = "";
+      if (this.cityEnabled) {
         CityResponse response = this.reader.city(address);
-        return response.getCity().getNames().getOrDefault(Settings.IMP.MAIN.GEOIP.LOCALE, Settings.IMP.MAIN.GEOIP.DEFAULT_VALUE)
-            + ", " + response.getCountry().getNames().getOrDefault(Settings.IMP.MAIN.GEOIP.LOCALE, Settings.IMP.MAIN.GEOIP.DEFAULT_VALUE);
+        city = response.getCity().getNames().getOrDefault(Settings.IMP.MAIN.GEOIP.LOCALE, Settings.IMP.MAIN.GEOIP.DEFAULT_VALUE);
+        country = response.getCountry().getNames().getOrDefault(Settings.IMP.MAIN.GEOIP.LOCALE, Settings.IMP.MAIN.GEOIP.DEFAULT_VALUE);
       } else {
         CountryResponse response = this.reader.country(address);
-        return response.getCountry().getNames().getOrDefault(Settings.IMP.MAIN.GEOIP.LOCALE, Settings.IMP.MAIN.GEOIP.DEFAULT_VALUE);
+        country = response.getCountry().getNames().getOrDefault(Settings.IMP.MAIN.GEOIP.LOCALE, Settings.IMP.MAIN.GEOIP.DEFAULT_VALUE);
       }
+
+      return Settings.IMP.MAIN.GEOIP.FORMAT.replace("{CITY}", city).replace("{COUNTRY}", country);
     } catch (IOException | GeoIp2Exception e) {
       e.printStackTrace(); // printStackTrace is necessary there
       return Settings.IMP.MAIN.GEOIP.DEFAULT_VALUE;
