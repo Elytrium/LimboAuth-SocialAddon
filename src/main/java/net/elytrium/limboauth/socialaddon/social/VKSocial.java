@@ -123,7 +123,7 @@ public class VKSocial extends AbstractSocial {
         } catch (LongPollServerKeyExpiredException ignored) {
           // ignored
         } catch (ClientException | ApiException e) {
-          e.printStackTrace();
+          e.printStackTrace(); // printStackTrace is necessary there
         }
       }
     }).start();
@@ -192,7 +192,7 @@ public class VKSocial extends AbstractSocial {
           .execute();
     } catch (ClientException | ApiException e) {
       if (Settings.IMP.MAIN.DEBUG) {
-        e.printStackTrace();
+        e.printStackTrace(); // printStackTrace is necessary there
       }
     }
   }
@@ -229,7 +229,7 @@ public class VKSocial extends AbstractSocial {
             .sendMessageEventAnswer(this.actor, eventId, userId, peerId)
             .execute();
       } catch (ClientException | ApiException e) {
-        e.printStackTrace();
+        e.printStackTrace(); // printStackTrace is necessary there
       }
 
       if (payload.has("button")) {

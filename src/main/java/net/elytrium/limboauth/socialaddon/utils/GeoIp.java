@@ -49,13 +49,13 @@ public class GeoIp {
     this.dataPath = dataPath;
 
     try {
-      this.initialiseGeoIp();
+      this.initializeGeoIp();
     } catch (Exception e) {
-      e.printStackTrace();
+      throw new IllegalStateException(e);
     }
   }
 
-  private void initialiseGeoIp() throws Exception {
+  private void initializeGeoIp() throws Exception {
     Path path = this.dataPath.resolve("geo.mmdb");
     if (!Files.exists(path)) {
       this.downloadDatabase();
@@ -105,7 +105,7 @@ public class GeoIp {
         return response.getCountry().getNames().getOrDefault(Settings.IMP.MAIN.GEOIP.LOCALE, Settings.IMP.MAIN.GEOIP.DEFAULT_VALUE);
       }
     } catch (IOException | GeoIp2Exception e) {
-      e.printStackTrace();
+      e.printStackTrace(); // printStackTrace is necessary there
       return Settings.IMP.MAIN.GEOIP.DEFAULT_VALUE;
     }
   }

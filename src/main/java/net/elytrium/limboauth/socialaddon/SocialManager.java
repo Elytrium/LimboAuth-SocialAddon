@@ -20,17 +20,17 @@ package net.elytrium.limboauth.socialaddon;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.function.BiConsumer;
 import net.elytrium.limboauth.socialaddon.model.SocialPlayer;
 import net.elytrium.limboauth.socialaddon.social.AbstractSocial;
+import net.elytrium.limboauth.socialaddon.social.SocialButtonListenerAdapter;
 import net.elytrium.limboauth.socialaddon.social.SocialInitializationException;
-import net.elytrium.limboauth.socialaddon.social.SocialMessageListener;
+import net.elytrium.limboauth.socialaddon.social.SocialMessageListenerAdapter;
 
 public class SocialManager {
 
   private final LinkedList<AbstractSocial> socialList;
-  private final LinkedList<SocialMessageListener> messageEvents = new LinkedList<>();
-  private final HashMap<String, BiConsumer<String, Long>> buttonEvents = new HashMap<>();
+  private final LinkedList<SocialMessageListenerAdapter> messageEvents = new LinkedList<>();
+  private final HashMap<String, SocialButtonListenerAdapter> buttonEvents = new HashMap<>();
 
   public SocialManager(AbstractSocial.Constructor... socialList) {
     this.socialList = new LinkedList<>();
@@ -41,26 +41,42 @@ public class SocialManager {
           this.socialList.add(social);
         }
       } catch (SocialInitializationException e) {
-        e.printStackTrace();
+        e.printStackTrace(); // printStackTrace is necessary there
       }
     }
   }
 
   private void onMessageReceived(String dbField, Long id, String message) {
-    this.messageEvents.forEach(e -> e.accept(dbField, id, message));
+    this.messageEvents.forEach(event -> {
+      try {
+        event.accept(dbField, id, message);
+      } catch (Exception e) {
+        this.broadcastMessage(dbField, id, Settings.IMP.MAIN.STRINGS.SOCIAL_EXCEPTION_CAUGHT);
+        if (Settings.IMP.MAIN.DEBUG) {
+          e.printStackTrace(); // printStackTrace is necessary there
+        }
+      }
+    });
   }
 
   private void onButtonClicked(String dbField, Long id, String buttonId) {
     if (this.buttonEvents.containsKey(buttonId)) {
-      this.buttonEvents.get(buttonId).accept(dbField, id);
+      try {
+        this.buttonEvents.get(buttonId).accept(dbField, id);
+      } catch (Exception e) {
+        this.broadcastMessage(dbField, id, Settings.IMP.MAIN.STRINGS.SOCIAL_EXCEPTION_CAUGHT);
+        if (Settings.IMP.MAIN.DEBUG) {
+          e.printStackTrace(); // printStackTrace is necessary there
+        }
+      }
     }
   }
 
-  public void addMessageEvent(SocialMessageListener event) {
+  public void addMessageEvent(SocialMessageListenerAdapter event) {
     this.messageEvents.add(event);
   }
 
-  public void addButtonEvent(String id, BiConsumer<String, Long> event) {
+  public void addButtonEvent(String id, SocialButtonListenerAdapter event) {
     this.buttonEvents.put(id, event);
   }
 
@@ -73,7 +89,7 @@ public class SocialManager {
       try {
         social.start();
       } catch (SocialInitializationException e) {
-        e.printStackTrace();
+        e.printStackTrace(); // printStackTrace is necessary there
       }
     }
   }
@@ -106,7 +122,7 @@ public class SocialManager {
   }
 
   public void broadcastMessage(SocialPlayer player, String message,
-                               List<List<AbstractSocial.ButtonItem>> item, AbstractSocial.ButtonVisibility visibility) {
+      List<List<AbstractSocial.ButtonItem>> item, AbstractSocial.ButtonVisibility visibility) {
     this.socialList.stream()
         .filter(e -> e.canSend(player))
         .forEach(e -> e.sendMessage(player, message, item, visibility));
@@ -124,7 +140,7 @@ public class SocialManager {
 
 
   public void broadcastMessage(String dbField, Long id, String message,
-                               List<List<AbstractSocial.ButtonItem>> item, AbstractSocial.ButtonVisibility visibility) {
+      List<List<AbstractSocial.ButtonItem>> item, AbstractSocial.ButtonVisibility visibility) {
     this.socialList.stream()
         .filter(e -> e.getDbField().equals(dbField))
         .forEach(e -> e.sendMessage(id, message, item, visibility));

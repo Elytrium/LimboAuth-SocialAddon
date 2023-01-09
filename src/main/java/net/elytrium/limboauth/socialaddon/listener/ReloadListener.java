@@ -18,17 +18,19 @@
 package net.elytrium.limboauth.socialaddon.listener;
 
 import com.velocitypowered.api.event.Subscribe;
+import java.sql.SQLException;
 import net.elytrium.limboauth.event.AuthPluginReloadEvent;
+import net.elytrium.limboauth.socialaddon.Addon;
 
 public class ReloadListener {
-  Runnable onReload;
+  Addon addon;
 
-  public ReloadListener(Runnable onReload) {
-    this.onReload = onReload;
+  public ReloadListener(Addon addon) {
+    this.addon = addon;
   }
 
   @Subscribe
-  public void onAuthReload(AuthPluginReloadEvent event) {
-    this.onReload.run();
+  public void onAuthReload(AuthPluginReloadEvent event) throws SQLException {
+    this.addon.onReload();
   }
 }

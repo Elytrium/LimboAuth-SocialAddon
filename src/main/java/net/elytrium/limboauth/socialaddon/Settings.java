@@ -45,6 +45,7 @@ public class Settings extends YamlConfig {
 
   public static class MAIN {
 
+    public List<String> SOCIAL_REGISTER_CMDS = List.of("!account register");
     public List<String> SOCIAL_LINK_CMDS = List.of("!account link");
     public List<String> FORCE_KEYBOARD_CMDS = List.of("!keyboard");
 
@@ -160,9 +161,13 @@ public class Settings extends YamlConfig {
       public String LINK_WRONG_CODE = "{PRFX} Wrong code, run '!account link {NICKNAME}' again";
       public String LINK_SUCCESS = "✅ Social was successfully linked{NL}Use '!keyboard' to show keyboard";
       public String LINK_ALREADY = "Account is already linked";
+      public String LINK_SOCIAL_REGISTER_CMD_USAGE = "You didn't specify a nickname. Enter '!account register <nickname>'";
       public String LINK_SOCIAL_CMD_USAGE = "You didn't specify a nickname. Enter '!account link <nickname>'";
       public String LINK_UNKNOWN_ACCOUNT = "There is no account with this nickname";
       public String LINK_CODE = "🔑 Enter '/addsocial {CODE}' in game to complete account linking";
+      public String REGISTER_INCORRECT_NICKNAME = "There is no account with this nickname";
+      public String REGISTER_TAKEN_NICKNAME = "This nickname is already taken";
+      public String REGISTER_SUCCESS = "✅ Account was successfully registered{NL}Your password: {PASSWORD}{NL}Use '!keyboard' to show keyboard";
 
       public String FORCE_UNLINK_CMD_USAGE = "{PRFX} Usage: /forcesocialunregister <username>";
 
@@ -220,6 +225,7 @@ public class Settings extends YamlConfig {
       @Comment("This message will be sent to the players without social-link right after their login")
       public String LINK_ANNOUNCEMENT = "{PRFX} Hey! We recommend you to link a social network using the /addsocial command to secure your account";
 
+      public String SOCIAL_EXCEPTION_CAUGHT = "An exception occurred while processing your request";
     }
   }
 }

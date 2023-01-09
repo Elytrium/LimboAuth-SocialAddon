@@ -180,6 +180,51 @@ public class Addon {
         return;
       }
 
+      for (String socialRegisterCmd : Settings.IMP.MAIN.SOCIAL_REGISTER_CMDS) {
+        if (lowercaseMessage.startsWith(socialRegisterCmd)) {
+          int desiredLength = socialRegisterCmd.length() + 1;
+
+          if (message.length() <= desiredLength) {
+            this.socialManager.broadcastMessage(dbField, id, Settings.IMP.MAIN.STRINGS.LINK_SOCIAL_REGISTER_CMD_USAGE);
+            return;
+          }
+
+          if (this.dao.queryForEq(dbField, id).size() != 0) {
+            this.socialManager.broadcastMessage(dbField, id, Settings.IMP.MAIN.STRINGS.LINK_ALREADY);
+            return;
+          }
+
+          String account = message.substring(desiredLength).toLowerCase(Locale.ROOT);
+          if (!this.nicknamePattern.matcher(account).matches()) {
+            this.socialManager.broadcastMessage(dbField, id, Settings.IMP.MAIN.STRINGS.REGISTER_INCORRECT_NICKNAME);
+            return;
+          }
+
+          String lowercaseNickname = account.toLowerCase(Locale.ROOT);
+          if (this.plugin.getPlayerDao().queryForId(lowercaseNickname) != null) {
+            this.socialManager.broadcastMessage(dbField, id, Settings.IMP.MAIN.STRINGS.REGISTER_TAKEN_NICKNAME);
+            return;
+          }
+
+          String newPassword = Long.toHexString(Double.doubleToLongBits(Math.random()));
+
+          RegisteredPlayer player = new RegisteredPlayer(
+              account,
+              lowercaseNickname,
+              AuthSessionHandler.genHash(newPassword),
+              "",
+              "",
+              System.currentTimeMillis(),
+              "",
+              ""
+          );
+
+          this.plugin.getPlayerDao().create(player);
+          this.socialManager.broadcastMessage(dbField, id,
+              Settings.IMP.MAIN.STRINGS.REGISTER_SUCCESS.replace("{PASSWORD}", newPassword));
+        }
+      }
+
       for (String socialLinkCmd : Settings.IMP.MAIN.SOCIAL_LINK_CMDS) {
         if (lowercaseMessage.startsWith(socialLinkCmd)) {
           int desiredLength = socialLinkCmd.length() + 1;
@@ -189,13 +234,8 @@ public class Addon {
             return;
           }
 
-          try {
-            if (this.dao.queryForEq(dbField, id).size() != 0) {
-              this.socialManager.broadcastMessage(dbField, id, Settings.IMP.MAIN.STRINGS.LINK_ALREADY);
-              return;
-            }
-          } catch (SQLException e) {
-            e.printStackTrace();
+          if (this.dao.queryForEq(dbField, id).size() != 0) {
+            this.socialManager.broadcastMessage(dbField, id, Settings.IMP.MAIN.STRINGS.LINK_ALREADY);
             return;
           }
 
@@ -215,262 +255,242 @@ public class Addon {
       }
 
       for (String forceKeyboardCmd : Settings.IMP.MAIN.FORCE_KEYBOARD_CMDS) {
-        try {
-          if (lowercaseMessage.startsWith(forceKeyboardCmd)) {
-            if (this.dao.queryBuilder().where().eq(dbField, id).countOf() == 0) {
-              this.socialManager.broadcastMessage(dbField, id, Settings.IMP.MAIN.START_REPLY);
-              return;
-            }
-
-            this.socialManager.broadcastMessage(dbField, id, Settings.IMP.MAIN.STRINGS.KEYBOARD_RESTORED, this.keyboard);
+        if (lowercaseMessage.startsWith(forceKeyboardCmd)) {
+          if (this.dao.queryBuilder().where().eq(dbField, id).countOf() == 0) {
+            this.socialManager.broadcastMessage(dbField, id, Settings.IMP.MAIN.START_REPLY);
             return;
           }
-        } catch (SQLException e) {
-          throw new RuntimeException(e);
+
+          this.socialManager.broadcastMessage(dbField, id, Settings.IMP.MAIN.STRINGS.KEYBOARD_RESTORED, this.keyboard);
+          return;
         }
       }
     });
 
     this.socialManager.addButtonEvent(INFO_BTN, (dbField, id) -> {
-      try {
-        List<SocialPlayer> socialPlayerList = this.dao.queryForEq(dbField, id);
+      List<SocialPlayer> socialPlayerList = this.dao.queryForEq(dbField, id);
 
-        if (socialPlayerList.size() == 0) {
-          return;
-        }
+      if (socialPlayerList.size() == 0) {
+        return;
+      }
 
-        SocialPlayer player = socialPlayerList.get(0);
-        Optional<Player> proxyPlayer = this.server.getPlayer(player.getLowercaseNickname());
-        String server;
-        String ip;
-        String location;
+      SocialPlayer player = socialPlayerList.get(0);
+      Optional<Player> proxyPlayer = this.server.getPlayer(player.getLowercaseNickname());
+      String server;
+      String ip;
+      String location;
 
-        if (proxyPlayer.isPresent()) {
-          Player player1 = proxyPlayer.get();
-          Optional<ServerConnection> connection = player1.getCurrentServer();
+      if (proxyPlayer.isPresent()) {
+        Player player1 = proxyPlayer.get();
+        Optional<ServerConnection> connection = player1.getCurrentServer();
 
-          if (connection.isPresent()) {
-            server = connection.get().getServerInfo().getName();
-          } else {
-            server = Settings.IMP.MAIN.STRINGS.STATUS_OFFLINE;
-          }
-
-          ip = player1.getRemoteAddress().getAddress().getHostAddress();
-          location = Optional.ofNullable(this.geoIp)
-              .map(nonNullGeo -> "(" + nonNullGeo.getLocation(ip) + ")").orElse("");
+        if (connection.isPresent()) {
+          server = connection.get().getServerInfo().getName();
         } else {
           server = Settings.IMP.MAIN.STRINGS.STATUS_OFFLINE;
-          ip = Settings.IMP.MAIN.STRINGS.STATUS_OFFLINE;
-          location = "";
         }
 
-        this.socialManager.broadcastMessage(dbField, id, Settings.IMP.MAIN.STRINGS.INFO_MSG
-                .replace("{NICKNAME}", player.getLowercaseNickname())
-                .replace("{SERVER}", server)
-                .replace("{IP}", ip)
-                .replace("{LOCATION}", location)
-                .replace("{NOTIFY_STATUS}", player.isNotifyEnabled()
-                    ? Settings.IMP.MAIN.STRINGS.NOTIFY_ENABLED : Settings.IMP.MAIN.STRINGS.NOTIFY_DISABLED)
-                .replace("{BLOCK_STATUS}", player.isBlocked() ? Settings.IMP.MAIN.STRINGS.BLOCK_ENABLED : Settings.IMP.MAIN.STRINGS.BLOCK_DISABLED)
-                .replace("{TOTP_STATUS}", player.isTotpEnabled() ? Settings.IMP.MAIN.STRINGS.TOTP_ENABLED : Settings.IMP.MAIN.STRINGS.TOTP_DISABLED),
-            this.keyboard);
-      } catch (SQLException e) {
-        e.printStackTrace();
+        ip = player1.getRemoteAddress().getAddress().getHostAddress();
+        location = Optional.ofNullable(this.geoIp)
+            .map(nonNullGeo -> "(" + nonNullGeo.getLocation(ip) + ")").orElse("");
+      } else {
+        server = Settings.IMP.MAIN.STRINGS.STATUS_OFFLINE;
+        ip = Settings.IMP.MAIN.STRINGS.STATUS_OFFLINE;
+        location = "";
       }
+
+      this.socialManager.broadcastMessage(dbField, id, Settings.IMP.MAIN.STRINGS.INFO_MSG
+              .replace("{NICKNAME}", player.getLowercaseNickname())
+              .replace("{SERVER}", server)
+              .replace("{IP}", ip)
+              .replace("{LOCATION}", location)
+              .replace("{NOTIFY_STATUS}", player.isNotifyEnabled()
+                  ? Settings.IMP.MAIN.STRINGS.NOTIFY_ENABLED : Settings.IMP.MAIN.STRINGS.NOTIFY_DISABLED)
+              .replace("{BLOCK_STATUS}", player.isBlocked() ? Settings.IMP.MAIN.STRINGS.BLOCK_ENABLED : Settings.IMP.MAIN.STRINGS.BLOCK_DISABLED)
+              .replace("{TOTP_STATUS}", player.isTotpEnabled() ? Settings.IMP.MAIN.STRINGS.TOTP_ENABLED : Settings.IMP.MAIN.STRINGS.TOTP_DISABLED),
+          this.keyboard
+      );
     });
 
     this.socialManager.addButtonEvent(BLOCK_BTN, (dbField, id) -> {
-      try {
-        List<SocialPlayer> socialPlayerList = this.dao.queryForEq(dbField, id);
+      List<SocialPlayer> socialPlayerList = this.dao.queryForEq(dbField, id);
 
-        if (socialPlayerList.size() == 0) {
-          return;
-        }
-
-        SocialPlayer player = socialPlayerList.get(0);
-
-        if (player.isBlocked()) {
-          player.setBlocked(false);
-          this.socialManager.broadcastMessage(dbField, id,
-              Settings.IMP.MAIN.STRINGS.UNBLOCK_SUCCESS.replace("{NICKNAME}", player.getLowercaseNickname()), this.keyboard);
-        } else {
-          player.setBlocked(true);
-
-          this.plugin.removePlayerFromCache(player.getLowercaseNickname());
-          this.server
-              .getPlayer(player.getLowercaseNickname())
-              .ifPresent(e -> e.disconnect(Addon.getSerializer().deserialize(Settings.IMP.MAIN.STRINGS.KICK_GAME_MESSAGE)));
-
-          this.socialManager.broadcastMessage(dbField, id,
-              Settings.IMP.MAIN.STRINGS.BLOCK_SUCCESS.replace("{NICKNAME}", player.getLowercaseNickname()), this.keyboard);
-        }
-
-        this.dao.update(player);
-      } catch (SQLException e) {
-        e.printStackTrace();
+      if (socialPlayerList.size() == 0) {
+        return;
       }
+
+      SocialPlayer player = socialPlayerList.get(0);
+
+      if (player.isBlocked()) {
+        player.setBlocked(false);
+        this.socialManager.broadcastMessage(dbField, id,
+            Settings.IMP.MAIN.STRINGS.UNBLOCK_SUCCESS.replace("{NICKNAME}", player.getLowercaseNickname()), this.keyboard
+        );
+      } else {
+        player.setBlocked(true);
+
+        this.plugin.removePlayerFromCache(player.getLowercaseNickname());
+        this.server
+            .getPlayer(player.getLowercaseNickname())
+            .ifPresent(e -> e.disconnect(Addon.getSerializer().deserialize(Settings.IMP.MAIN.STRINGS.KICK_GAME_MESSAGE)));
+
+        this.socialManager.broadcastMessage(dbField, id,
+            Settings.IMP.MAIN.STRINGS.BLOCK_SUCCESS.replace("{NICKNAME}", player.getLowercaseNickname()), this.keyboard
+        );
+      }
+
+      this.dao.update(player);
     });
 
     this.socialManager.addButtonEvent(TOTP_BTN, (dbField, id) -> {
-      try {
-        List<SocialPlayer> socialPlayerList = this.dao.queryForEq(dbField, id);
+      List<SocialPlayer> socialPlayerList = this.dao.queryForEq(dbField, id);
 
-        if (socialPlayerList.size() == 0) {
-          return;
-        }
-
-        SocialPlayer player = socialPlayerList.get(0);
-
-        if (player.isTotpEnabled()) {
-          player.setTotpEnabled(false);
-          this.socialManager.broadcastMessage(dbField, id,
-              Settings.IMP.MAIN.STRINGS.TOTP_DISABLE_SUCCESS.replace("{NICKNAME}", player.getLowercaseNickname()), this.keyboard);
-        } else {
-          player.setTotpEnabled(true);
-          this.socialManager.broadcastMessage(dbField, id,
-              Settings.IMP.MAIN.STRINGS.TOTP_ENABLE_SUCCESS.replace("{NICKNAME}", player.getLowercaseNickname()), this.keyboard);
-        }
-
-        this.dao.update(player);
-      } catch (SQLException e) {
-        e.printStackTrace();
+      if (socialPlayerList.size() == 0) {
+        return;
       }
+
+      SocialPlayer player = socialPlayerList.get(0);
+
+      if (player.isTotpEnabled()) {
+        player.setTotpEnabled(false);
+        this.socialManager.broadcastMessage(dbField, id,
+            Settings.IMP.MAIN.STRINGS.TOTP_DISABLE_SUCCESS.replace("{NICKNAME}", player.getLowercaseNickname()), this.keyboard
+        );
+      } else {
+        player.setTotpEnabled(true);
+        this.socialManager.broadcastMessage(dbField, id,
+            Settings.IMP.MAIN.STRINGS.TOTP_ENABLE_SUCCESS.replace("{NICKNAME}", player.getLowercaseNickname()), this.keyboard
+        );
+      }
+
+      this.dao.update(player);
     });
 
     this.socialManager.addButtonEvent(NOTIFY_BTN, (dbField, id) -> {
-      try {
-        List<SocialPlayer> socialPlayerList = this.dao.queryForEq(dbField, id);
+      List<SocialPlayer> socialPlayerList = this.dao.queryForEq(dbField, id);
 
-        if (socialPlayerList.size() == 0) {
-          return;
-        }
-
-        SocialPlayer player = socialPlayerList.get(0);
-
-        if (player.isNotifyEnabled()) {
-          player.setNotifyEnabled(false);
-          this.socialManager.broadcastMessage(dbField, id,
-              Settings.IMP.MAIN.STRINGS.NOTIFY_DISABLE_SUCCESS.replace("{NICKNAME}", player.getLowercaseNickname()), this.keyboard);
-        } else {
-          player.setNotifyEnabled(true);
-          this.socialManager.broadcastMessage(dbField, id,
-              Settings.IMP.MAIN.STRINGS.NOTIFY_ENABLE_SUCCESS.replace("{NICKNAME}", player.getLowercaseNickname()), this.keyboard);
-        }
-
-        this.dao.update(player);
-      } catch (SQLException e) {
-        e.printStackTrace();
+      if (socialPlayerList.size() == 0) {
+        return;
       }
+
+      SocialPlayer player = socialPlayerList.get(0);
+
+      if (player.isNotifyEnabled()) {
+        player.setNotifyEnabled(false);
+        this.socialManager.broadcastMessage(dbField, id,
+            Settings.IMP.MAIN.STRINGS.NOTIFY_DISABLE_SUCCESS.replace("{NICKNAME}", player.getLowercaseNickname()), this.keyboard
+        );
+      } else {
+        player.setNotifyEnabled(true);
+        this.socialManager.broadcastMessage(dbField, id,
+            Settings.IMP.MAIN.STRINGS.NOTIFY_ENABLE_SUCCESS.replace("{NICKNAME}", player.getLowercaseNickname()), this.keyboard
+        );
+      }
+
+      this.dao.update(player);
     });
 
     this.socialManager.addButtonEvent(KICK_BTN, (dbField, id) -> {
-      try {
-        List<SocialPlayer> socialPlayerList = this.dao.queryForEq(dbField, id);
+      List<SocialPlayer> socialPlayerList = this.dao.queryForEq(dbField, id);
 
-        if (socialPlayerList.size() == 0) {
-          return;
-        }
-
-        SocialPlayer player = socialPlayerList.get(0);
-        Optional<Player> proxyPlayer = this.server.getPlayer(player.getLowercaseNickname());
-        this.plugin.removePlayerFromCache(player.getLowercaseNickname());
-
-        if (proxyPlayer.isPresent()) {
-          proxyPlayer.get().disconnect(Addon.getSerializer().deserialize(Settings.IMP.MAIN.STRINGS.KICK_GAME_MESSAGE));
-          this.socialManager.broadcastMessage(dbField, id,
-              Settings.IMP.MAIN.STRINGS.KICK_SUCCESS.replace("{NICKNAME}", player.getLowercaseNickname()), this.keyboard);
-        } else {
-          this.socialManager.broadcastMessage(dbField, id,
-              Settings.IMP.MAIN.STRINGS.KICK_IS_OFFLINE.replace("{NICKNAME}", player.getLowercaseNickname()), this.keyboard);
-        }
-
-        this.dao.update(player);
-      } catch (SQLException e) {
-        e.printStackTrace();
+      if (socialPlayerList.size() == 0) {
+        return;
       }
+
+      SocialPlayer player = socialPlayerList.get(0);
+      Optional<Player> proxyPlayer = this.server.getPlayer(player.getLowercaseNickname());
+      this.plugin.removePlayerFromCache(player.getLowercaseNickname());
+
+      if (proxyPlayer.isPresent()) {
+        proxyPlayer.get().disconnect(Addon.getSerializer().deserialize(Settings.IMP.MAIN.STRINGS.KICK_GAME_MESSAGE));
+        this.socialManager.broadcastMessage(dbField, id,
+            Settings.IMP.MAIN.STRINGS.KICK_SUCCESS.replace("{NICKNAME}", player.getLowercaseNickname()), this.keyboard
+        );
+      } else {
+        this.socialManager.broadcastMessage(dbField, id,
+            Settings.IMP.MAIN.STRINGS.KICK_IS_OFFLINE.replace("{NICKNAME}", player.getLowercaseNickname()), this.keyboard
+        );
+      }
+
+      this.dao.update(player);
     });
 
     this.socialManager.addButtonEvent(RESTORE_BTN, (dbField, id) -> {
-      try {
-        List<SocialPlayer> socialPlayerList = this.dao.queryForEq(dbField, id);
+      List<SocialPlayer> socialPlayerList = this.dao.queryForEq(dbField, id);
 
-        if (socialPlayerList.size() == 0) {
-          return;
-        }
+      if (socialPlayerList.size() == 0) {
+        return;
+      }
 
-        SocialPlayer player = socialPlayerList.get(0);
+      SocialPlayer player = socialPlayerList.get(0);
 
-        if (Settings.IMP.MAIN.PROHIBIT_PREMIUM_RESTORE
-            && this.plugin.isPremiumInternal(player.getLowercaseNickname()).getState() != LimboAuth.PremiumState.CRACKED) {
-          this.socialManager.broadcastMessage(dbField, id,
-              Settings.IMP.MAIN.STRINGS.RESTORE_MSG_PREMIUM.replace("{NICKNAME}", player.getLowercaseNickname()),
-              this.keyboard);
-          return;
-        }
+      if (Settings.IMP.MAIN.PROHIBIT_PREMIUM_RESTORE
+          && this.plugin.isPremiumInternal(player.getLowercaseNickname()).getState() != LimboAuth.PremiumState.CRACKED) {
+        this.socialManager.broadcastMessage(dbField, id,
+            Settings.IMP.MAIN.STRINGS.RESTORE_MSG_PREMIUM.replace("{NICKNAME}", player.getLowercaseNickname()),
+            this.keyboard
+        );
+        return;
+      }
 
-        Dao<RegisteredPlayer, String> playerDao = this.plugin.getPlayerDao();
+      Dao<RegisteredPlayer, String> playerDao = this.plugin.getPlayerDao();
 
-        String newPassword = Long.toHexString(Double.doubleToLongBits(Math.random()));
+      String newPassword = Long.toHexString(Double.doubleToLongBits(Math.random()));
 
-        UpdateBuilder<RegisteredPlayer, String> updateBuilder = playerDao.updateBuilder();
-        updateBuilder.where().eq(RegisteredPlayer.LOWERCASE_NICKNAME_FIELD, player.getLowercaseNickname());
-        updateBuilder.updateColumnValue(RegisteredPlayer.HASH_FIELD, AuthSessionHandler.genHash(newPassword));
-        boolean updated = updateBuilder.update() != 0;
+      UpdateBuilder<RegisteredPlayer, String> updateBuilder = playerDao.updateBuilder();
+      updateBuilder.where().eq(RegisteredPlayer.LOWERCASE_NICKNAME_FIELD, player.getLowercaseNickname());
+      updateBuilder.updateColumnValue(RegisteredPlayer.HASH_FIELD, AuthSessionHandler.genHash(newPassword));
+      boolean updated = updateBuilder.update() != 0;
 
-        if (updated) {
-          this.socialManager.broadcastMessage(dbField, id,
-              Settings.IMP.MAIN.STRINGS.RESTORE_MSG.replace("{NICKNAME}", player.getLowercaseNickname()).replace("{PASSWORD}", newPassword),
-              this.keyboard);
-        } else {
-          this.socialManager.broadcastMessage(dbField, id,
-              Settings.IMP.MAIN.STRINGS.RESTORE_MSG_PREMIUM.replace("{NICKNAME}", player.getLowercaseNickname()),
-              this.keyboard);
-        }
-      } catch (SQLException e) {
-        e.printStackTrace();
+      if (updated) {
+        this.socialManager.broadcastMessage(dbField, id,
+            Settings.IMP.MAIN.STRINGS.RESTORE_MSG.replace("{NICKNAME}", player.getLowercaseNickname()).replace("{PASSWORD}", newPassword),
+            this.keyboard
+        );
+      } else {
+        this.socialManager.broadcastMessage(dbField, id,
+            Settings.IMP.MAIN.STRINGS.RESTORE_MSG_PREMIUM.replace("{NICKNAME}", player.getLowercaseNickname()),
+            this.keyboard
+        );
       }
     });
 
     this.socialManager.addButtonEvent(UNLINK_BTN, (dbField, id) -> {
-      try {
-        if (Settings.IMP.MAIN.DISABLE_UNLINK) {
-          this.socialManager.broadcastMessage(dbField, id, Settings.IMP.MAIN.STRINGS.UNLINK_DISABLED, this.keyboard);
-          return;
-        }
-        List<SocialPlayer> socialPlayerList = this.dao.queryForEq(dbField, id);
-
-        if (socialPlayerList.size() == 0) {
-          return;
-        }
-
-        SocialPlayer player = socialPlayerList.get(0);
-
-        if (player.isBlocked()) {
-          this.socialManager.broadcastMessage(dbField, id, Settings.IMP.MAIN.STRINGS.UNLINK_BLOCK_CONFLICT, this.keyboard);
-          return;
-        }
-
-        if (player.isTotpEnabled()) {
-          this.socialManager.broadcastMessage(dbField, id, Settings.IMP.MAIN.STRINGS.UNLINK_2FA_CONFLICT, this.keyboard);
-          return;
-        }
-
-        if (Settings.IMP.MAIN.UNLINK_BTN_ALL) {
-          this.dao.delete(player);
-          this.socialManager.unregisterHook(player);
-        } else {
-          UpdateBuilder<SocialPlayer, String> updateBuilder = this.dao.updateBuilder();
-          updateBuilder.where().eq(SocialPlayer.LOWERCASE_NICKNAME_FIELD, player.getLowercaseNickname());
-          updateBuilder.updateColumnValue(dbField, null);
-          updateBuilder.update();
-
-          this.socialManager.unregisterHook(dbField, player);
-        }
-
-        this.socialManager.broadcastMessage(dbField, id, Settings.IMP.MAIN.STRINGS.UNLINK_SUCCESS);
-      } catch (SQLException e) {
-        e.printStackTrace();
+      if (Settings.IMP.MAIN.DISABLE_UNLINK) {
+        this.socialManager.broadcastMessage(dbField, id, Settings.IMP.MAIN.STRINGS.UNLINK_DISABLED, this.keyboard);
+        return;
       }
+      List<SocialPlayer> socialPlayerList = this.dao.queryForEq(dbField, id);
+
+      if (socialPlayerList.size() == 0) {
+        return;
+      }
+
+      SocialPlayer player = socialPlayerList.get(0);
+
+      if (player.isBlocked()) {
+        this.socialManager.broadcastMessage(dbField, id, Settings.IMP.MAIN.STRINGS.UNLINK_BLOCK_CONFLICT, this.keyboard);
+        return;
+      }
+
+      if (player.isTotpEnabled()) {
+        this.socialManager.broadcastMessage(dbField, id, Settings.IMP.MAIN.STRINGS.UNLINK_2FA_CONFLICT, this.keyboard);
+        return;
+      }
+
+      if (Settings.IMP.MAIN.UNLINK_BTN_ALL) {
+        this.dao.delete(player);
+        this.socialManager.unregisterHook(player);
+      } else {
+        UpdateBuilder<SocialPlayer, String> updateBuilder = this.dao.updateBuilder();
+        updateBuilder.where().eq(SocialPlayer.LOWERCASE_NICKNAME_FIELD, player.getLowercaseNickname());
+        updateBuilder.updateColumnValue(dbField, null);
+        updateBuilder.update();
+
+        this.socialManager.unregisterHook(dbField, player);
+      }
+
+      this.socialManager.broadcastMessage(dbField, id, Settings.IMP.MAIN.STRINGS.UNLINK_SUCCESS);
     });
   }
 
@@ -487,25 +507,24 @@ public class Addon {
     this.nicknamePattern = Pattern.compile(net.elytrium.limboauth.Settings.IMP.MAIN.ALLOWED_NICKNAME_REGEX);
 
     this.server.getEventManager().register(this, new LimboAuthListener(this, this.dao, this.socialManager,
-        this.keyboard, this.geoIp));
-    this.server.getEventManager().register(this, new ReloadListener(() -> {
-      try {
-        this.onReload();
-      } catch (SQLException e) {
-        e.printStackTrace();
-      }
-    }));
+        this.keyboard, this.geoIp
+    ));
+    this.server.getEventManager().register(this, new ReloadListener(this));
 
     CommandManager commandManager = this.server.getCommandManager();
     commandManager.unregister(Settings.IMP.MAIN.LINKAGE_MAIN_CMD);
     commandManager.unregister(Settings.IMP.MAIN.FORCE_UNLINK_MAIN_CMD);
 
-    commandManager.register(Settings.IMP.MAIN.LINKAGE_MAIN_CMD,
+    commandManager.register(
+        Settings.IMP.MAIN.LINKAGE_MAIN_CMD,
         new ValidateLinkCommand(this, this.dao),
-        Settings.IMP.MAIN.LINKAGE_ALIAS_CMD.toArray(new String[0]));
-    commandManager.register(Settings.IMP.MAIN.FORCE_UNLINK_MAIN_CMD,
+        Settings.IMP.MAIN.LINKAGE_ALIAS_CMD.toArray(new String[0])
+    );
+    commandManager.register(
+        Settings.IMP.MAIN.FORCE_UNLINK_MAIN_CMD,
         new ForceSocialUnlinkCommand(this),
-        Settings.IMP.MAIN.FORCE_UNLINK_ALIAS_CMD.toArray(new String[0]));
+        Settings.IMP.MAIN.FORCE_UNLINK_ALIAS_CMD.toArray(new String[0])
+    );
   }
 
   public void unregisterPlayer(String nickname) {
@@ -516,7 +535,7 @@ public class Addon {
         this.dao.delete(player);
       }
     } catch (SQLException e) {
-      e.printStackTrace();
+      throw new IllegalStateException(e);
     }
   }
 

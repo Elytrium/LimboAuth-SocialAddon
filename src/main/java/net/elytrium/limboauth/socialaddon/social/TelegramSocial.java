@@ -144,10 +144,10 @@ public class TelegramSocial extends AbstractSocial {
         this.sendApiMethod(sendMessage);
       } catch (TelegramApiRequestException e) {
         if (Settings.IMP.MAIN.DEBUG) {
-          e.printStackTrace();
+          e.printStackTrace(); // printStackTrace is necessary there
         }
       } catch (TelegramApiException e) {
-        e.printStackTrace();
+        e.printStackTrace(); // printStackTrace is necessary there
       }
     }
 

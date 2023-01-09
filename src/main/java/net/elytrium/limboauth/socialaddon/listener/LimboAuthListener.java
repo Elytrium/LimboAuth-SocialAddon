@@ -181,8 +181,7 @@ public class LimboAuthListener {
     try {
       return this.socialPlayerDao.queryForId(player.getUsername().toLowerCase(Locale.ROOT));
     } catch (SQLException e) {
-      e.printStackTrace();
-      return null;
+      throw new IllegalStateException(e);
     }
   }
 
@@ -196,8 +195,7 @@ public class LimboAuthListener {
 
       return l.get(0);
     } catch (SQLException e) {
-      e.printStackTrace();
-      return null;
+      throw new IllegalStateException(e);
     }
   }
 }

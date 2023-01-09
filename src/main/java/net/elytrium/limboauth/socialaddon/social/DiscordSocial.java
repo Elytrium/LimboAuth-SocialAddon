@@ -152,13 +152,13 @@ public class DiscordSocial extends AbstractSocial {
             .submit()
             .exceptionally(e -> {
               if (Settings.IMP.MAIN.DEBUG) {
-                e.printStackTrace();
+                e.printStackTrace(); // printStackTrace is necessary there
               }
               return null;
             }))
         .exceptionally(e -> {
           if (Settings.IMP.MAIN.DEBUG) {
-            e.printStackTrace();
+            e.printStackTrace(); // printStackTrace is necessary there
           }
           return null;
         });

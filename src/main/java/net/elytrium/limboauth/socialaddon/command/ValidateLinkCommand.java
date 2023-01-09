@@ -89,7 +89,7 @@ public class ValidateLinkCommand implements SimpleCommand {
         } catch (NumberFormatException ignored) {
           this.sendUsage(player);
         } catch (SQLException ex) {
-          ex.printStackTrace();
+          throw new IllegalStateException(ex);
         }
       }
     }
