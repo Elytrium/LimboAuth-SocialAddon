@@ -18,10 +18,15 @@
 package net.elytrium.limboauth.socialaddon.social;
 
 import java.util.List;
+import java.util.Locale;
+import java.util.Objects;
+import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 import javax.security.auth.login.LoginException;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
+import net.dv8tion.jda.api.entities.Activity;
+import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Role;
 import net.dv8tion.jda.api.entities.User;
 import net.dv8tion.jda.api.events.interaction.component.ButtonInteractionEvent;
@@ -39,6 +44,8 @@ import org.jetbrains.annotations.NotNull;
 public class DiscordSocial extends AbstractSocial {
 
   private JDA jda;
+  private List<RoleAction> onPlayerAddedRoleActions;
+  private List<RoleAction> onPlayerRemovedRoleActions;
 
   public DiscordSocial(SocialMessageListener onMessageReceived, SocialButtonListener onButtonClicked) {
     super(onMessageReceived, onButtonClicked);
@@ -46,15 +53,31 @@ public class DiscordSocial extends AbstractSocial {
 
   public void start() throws SocialInitializationException {
     try {
-      this.jda = JDABuilder
-          .create(Settings.IMP.MAIN.DISCORD.TOKEN, GatewayIntent.DIRECT_MESSAGES)
-          .disableCache(CacheFlag.ACTIVITY, CacheFlag.VOICE_STATE, CacheFlag.EMOTE, CacheFlag.CLIENT_STATUS, CacheFlag.ONLINE_STATUS)
-          .build();
+      JDABuilder jdaBuilder;
+      if (Settings.IMP.MAIN.DISCORD.GUILD_MEMBER_CACHE_ENABLED) {
+        jdaBuilder = JDABuilder.create(Settings.IMP.MAIN.DISCORD.TOKEN, GatewayIntent.DIRECT_MESSAGES, GatewayIntent.GUILD_MEMBERS);
+      } else {
+        jdaBuilder = JDABuilder.create(Settings.IMP.MAIN.DISCORD.TOKEN, GatewayIntent.DIRECT_MESSAGES);
+      }
 
-      this.jda.addEventListener(new Listener(this::proceedMessage, this::proceedButton));
-    } catch (LoginException e) {
+      this.jda = jdaBuilder.disableCache(CacheFlag.ACTIVITY, CacheFlag.VOICE_STATE, CacheFlag.EMOTE, CacheFlag.CLIENT_STATUS, CacheFlag.ONLINE_STATUS)
+          .setActivity(Settings.IMP.MAIN.DISCORD.ACTIVITY_ENABLED
+              ? Activity.of(Settings.IMP.MAIN.DISCORD.ACTIVITY_TYPE, Settings.IMP.MAIN.DISCORD.ACTIVITY_NAME, Settings.IMP.MAIN.DISCORD.ACTIVITY_URL)
+              : null)
+          .build().awaitReady();
+    } catch (LoginException | InterruptedException e) {
       throw new SocialInitializationException(e);
     }
+
+    this.jda.addEventListener(new Listener(this.jda, this::proceedMessage, this::proceedButton));
+    this.onPlayerAddedRoleActions = Settings.IMP.MAIN.DISCORD.ON_PLAYER_ADDED.stream()
+        .map(e -> e.split(" "))
+        .map(RoleAction::new)
+        .collect(Collectors.toList());
+    this.onPlayerRemovedRoleActions = Settings.IMP.MAIN.DISCORD.ON_PLAYER_REMOVED.stream()
+        .map(e -> e.split(" "))
+        .map(RoleAction::new)
+        .collect(Collectors.toList());
   }
 
   @Override
@@ -76,43 +99,17 @@ public class DiscordSocial extends AbstractSocial {
 
   @Override
   public void onPlayerAdded(Long id) {
-    this.parseCommands(id, Settings.IMP.MAIN.DISCORD.ON_PLAYER_ADDED);
+    this.onPlayerAddedRoleActions.forEach(action -> action.doAction(id));
   }
 
   @Override
   public void onPlayerRemoved(SocialPlayer player) {
-    this.parseCommands(player.getDiscordID(), Settings.IMP.MAIN.DISCORD.ON_PLAYER_REMOVED);
-  }
-
-  @SuppressWarnings("ConstantConditions")
-  private void parseCommands(Long id, List<String> commands) {
-    for (String argsString : commands) {
-      String[] args = argsString.split(" ");
-      String command = args[0];
-      switch (command) {
-        case "addrole": {
-          long roleId = Long.parseLong(args[1]);
-          Role role = this.jda.getRoleById(roleId);
-          role.getGuild().addRoleToMember(id, role).queue();
-          break;
-        }
-        case "remrole": {
-          long roleId = Long.parseLong(args[1]);
-          Role role = this.jda.getRoleById(roleId);
-          role.getGuild().removeRoleFromMember(id, role).queue();
-          break;
-        }
-        default: {
-          break;
-        }
-      }
-    }
+    this.onPlayerRemovedRoleActions.forEach(action -> action.doAction(player.getDiscordID()));
   }
 
   @Override
   public void sendMessage(Long id, String content, List<List<ButtonItem>> buttons, ButtonVisibility visibility) {
     User user = this.jda.retrieveUserById(id).complete();
-
     if (user == null) {
       return;
     }
@@ -176,16 +173,36 @@ public class DiscordSocial extends AbstractSocial {
 
   private static class Listener extends ListenerAdapter {
 
+    private final List<Role> requiredRoles;
     private final SocialMessageListener onMessageReceived;
     private final SocialButtonListener onButtonClicked;
 
-    Listener(SocialMessageListener onMessageReceived, SocialButtonListener onButtonClicked) {
+    Listener(JDA jda, SocialMessageListener onMessageReceived, SocialButtonListener onButtonClicked) {
+      this.requiredRoles = Settings.IMP.MAIN.DISCORD.REQUIRED_ROLES.stream()
+          .map(jda::getRoleById)
+          .filter(Objects::nonNull)
+          .collect(Collectors.toList());
       this.onMessageReceived = onMessageReceived;
       this.onButtonClicked = onButtonClicked;
     }
 
     @Override
     public void onMessageReceived(@NotNull MessageReceivedEvent event) {
+      User user = event.getAuthor();
+      if (user.getIdLong() == event.getJDA().getSelfUser().getIdLong()) {
+        return;
+      }
+
+      for (Role role : this.requiredRoles) {
+        Member member = role.getGuild().retrieveMember(user).complete();
+        if (member == null || !member.getRoles().contains(role)) {
+          user.openPrivateChannel()
+              .submit()
+              .thenAccept(privateChannel -> privateChannel.sendMessage(Settings.IMP.MAIN.DISCORD.NO_ROLES_MESSAGE).queue());
+          return;
+        }
+      }
+
       this.onMessageReceived.accept(SocialPlayer.DISCORD_DB_FIELD, event.getAuthor().getIdLong(), event.getMessage().getContentRaw());
     }
 
@@ -197,4 +214,40 @@ public class DiscordSocial extends AbstractSocial {
 
   }
 
+  private final class RoleAction {
+    private final RoleActionType action;
+    private final Role role;
+
+    private RoleAction(String[] serializedAction) {
+      this(RoleActionType.valueOf(serializedAction[0].toUpperCase(Locale.ROOT)), serializedAction[1]);
+    }
+
+    private RoleAction(RoleActionType action, String roleId) {
+      this(action, DiscordSocial.this.jda.getRoleById(roleId));
+    }
+
+    private RoleAction(RoleActionType action, Role role) {
+      this.action = action;
+      this.role = role;
+    }
+
+    public void doAction(Long id) {
+      this.action.doAction(this.role, id);
+    }
+  }
+
+  private enum RoleActionType {
+    ADDROLE((role, id) -> role.getGuild().addRoleToMember(id, role).queue()),
+    REMROLE((role, id) -> role.getGuild().removeRoleFromMember(id, role).queue());
+
+    private final BiConsumer<Role, Long> doAction;
+
+    RoleActionType(BiConsumer<Role, Long> doAction) {
+      this.doAction = doAction;
+    }
+
+    public void doAction(Role role, long userId) {
+      this.doAction.accept(role, userId);
+    }
+  }
 }

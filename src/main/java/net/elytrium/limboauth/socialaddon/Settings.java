@@ -18,6 +18,7 @@
 package net.elytrium.limboauth.socialaddon;
 
 import java.util.List;
+import net.dv8tion.jda.api.entities.Activity;
 import net.elytrium.java.commons.config.YamlConfig;
 import net.elytrium.java.commons.mc.serialization.Serializers;
 
@@ -114,10 +115,38 @@ public class Settings extends YamlConfig {
       @Comment({
           "Available: ",
           "addrole <role id>",
-          "remrole <role id>"
+          "remrole <role id>",
+          "",
+          "Example: ",
+          "on-player-added: ",
+          " - addrole 12345678",
+          "on-player-removed: ",
+          " - remrole 12345678"
       })
       public List<String> ON_PLAYER_ADDED = List.of();
       public List<String> ON_PLAYER_REMOVED = List.of();
+
+      public boolean ACTIVITY_ENABLED = true;
+      @Comment("Available values: PLAYING, STREAMING, LISTENING, WATCHING, COMPETING")
+      public Activity.ActivityType ACTIVITY_TYPE = Activity.ActivityType.PLAYING;
+      @Comment("Activity URL. Supported only with activity-type: STREAMING")
+      public String ACTIVITY_URL = null;
+      public String ACTIVITY_NAME = "LimboAuth Social Addon";
+
+      @Comment({
+          "Which role ids a player must have on the Discord server to use the bot",
+          "",
+          "Example: ",
+          "required-roles: ",
+          " - 1234567890"
+      })
+      public List<String> REQUIRED_ROLES = List.of();
+      @Comment({
+          "It's better to keep this option enabled if you have set required-roles config option",
+          "Requires SERVER MEMBERS INTENT to be enabled in the bot settings on the Discord Developer Portal"
+      })
+      public boolean GUILD_MEMBER_CACHE_ENABLED = false;
+      public String NO_ROLES_MESSAGE = "You don't have permission to use commands";
     }
 
     @Create
