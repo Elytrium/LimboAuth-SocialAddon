@@ -215,7 +215,7 @@ public class Addon {
           }
 
           String lowercaseNickname = account.toLowerCase(Locale.ROOT);
-          if (this.plugin.getPlayerDao().queryForId(lowercaseNickname) != null) {
+          if (this.plugin.getPlayerDao().idExists(lowercaseNickname)) {
             this.socialManager.broadcastMessage(dbField, id, Settings.IMP.MAIN.STRINGS.REGISTER_TAKEN_NICKNAME);
             return;
           }
