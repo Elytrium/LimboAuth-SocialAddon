@@ -99,7 +99,7 @@ public class SocialPlayer {
   }
 
   public Boolean isTotpEnabled() {
-    return this.totpEnabled;
+    return this.totpEnabled && (this.getDiscordID() != null || this.getVkID() != null || this.getTelegramID() != null);
   }
 
   public void setTotpEnabled(Boolean totpEnabled) {

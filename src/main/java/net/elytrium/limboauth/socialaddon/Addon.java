@@ -25,6 +25,7 @@ import com.velocitypowered.api.event.proxy.ProxyInitializeEvent;
 import com.velocitypowered.api.plugin.Dependency;
 import com.velocitypowered.api.plugin.Plugin;
 import com.velocitypowered.api.plugin.PluginContainer;
+import com.velocitypowered.api.plugin.PluginDescription;
 import com.velocitypowered.api.plugin.annotation.DataDirectory;
 import com.velocitypowered.api.proxy.Player;
 import com.velocitypowered.api.proxy.ProxyServer;
@@ -43,6 +44,7 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.regex.Pattern;
 import net.elytrium.java.commons.mc.serialization.Serializer;
 import net.elytrium.java.commons.mc.serialization.Serializers;
+import net.elytrium.java.commons.updates.UpdatesChecker;
 import net.elytrium.limboauth.LimboAuth;
 import net.elytrium.limboauth.handler.AuthSessionHandler;
 import net.elytrium.limboauth.model.RegisteredPlayer;
@@ -56,7 +58,6 @@ import net.elytrium.limboauth.socialaddon.social.DiscordSocial;
 import net.elytrium.limboauth.socialaddon.social.TelegramSocial;
 import net.elytrium.limboauth.socialaddon.social.VKSocial;
 import net.elytrium.limboauth.socialaddon.utils.GeoIp;
-import net.elytrium.limboauth.socialaddon.utils.UpdatesChecker;
 import net.elytrium.limboauth.thirdparty.com.j256.ormlite.dao.Dao;
 import net.elytrium.limboauth.thirdparty.com.j256.ormlite.dao.DaoManager;
 import net.elytrium.limboauth.thirdparty.com.j256.ormlite.stmt.UpdateBuilder;
@@ -88,6 +89,7 @@ public class Addon {
   private static final String KICK_BTN = "kick";
   private static final String RESTORE_BTN = "restore";
   private static final String UNLINK_BTN = "unlink";
+  private static final String PLUGIN_MINIMUM_VERSION = "1.0.9";
 
   private static Serializer SERIALIZER;
 
@@ -122,7 +124,14 @@ public class Addon {
     this.metricsFactory = metricsFactory;
     this.dataDirectory = dataDirectory;
 
-    this.plugin = (LimboAuth) this.server.getPluginManager().getPlugin("limboauth").flatMap(PluginContainer::getInstance).orElseThrow();
+    Optional<PluginContainer> container = this.server.getPluginManager().getPlugin("limboauth");
+    String version = container.map(PluginContainer::getDescription).flatMap(PluginDescription::getVersion).orElseThrow();
+    
+    if (!UpdatesChecker.checkVersion(PLUGIN_MINIMUM_VERSION, version)) {
+      throw new IllegalStateException("Incorrect version of LimboAuth plugin, the addon requires version " + PLUGIN_MINIMUM_VERSION + " or newer");
+    }
+
+    this.plugin = (LimboAuth) container.flatMap(PluginContainer::getInstance).orElseThrow();
     this.codeMap = new ConcurrentHashMap<>();
     this.requestedReverseMap = new ConcurrentHashMap<>();
   }
@@ -131,7 +140,12 @@ public class Addon {
   public void onProxyInitialization(ProxyInitializeEvent event) throws SQLException {
     this.onReload();
     this.metricsFactory.make(this, 14770);
-    UpdatesChecker.checkForUpdates(this.logger);
+    if (!UpdatesChecker.checkVersionByURL("https://raw.githubusercontent.com/Elytrium/LimboAuth-SocialAddon/master/VERSION", Settings.IMP.VERSION)) {
+      this.logger.error("****************************************");
+      this.logger.warn("The new LimboAuth update was found, please update.");
+      this.logger.error("https://github.com/Elytrium/LimboAuth-SocialAddon/releases/");
+      this.logger.error("****************************************");
+    }
   }
 
   @SuppressFBWarnings(value = "NP_NULL_ON_SOME_PATH", justification = "LEGACY_AMPERSAND can't be null in velocity.")
@@ -216,7 +230,9 @@ public class Addon {
               "",
               System.currentTimeMillis(),
               "",
-              ""
+              "",
+              "",
+              0L
           );
 
           this.plugin.getPlayerDao().create(player);
@@ -509,7 +525,7 @@ public class Addon {
 
     this.nicknamePattern = Pattern.compile(net.elytrium.limboauth.Settings.IMP.MAIN.ALLOWED_NICKNAME_REGEX);
 
-    this.server.getEventManager().register(this, new LimboAuthListener(this, this.dao, this.socialManager,
+    this.server.getEventManager().register(this, new LimboAuthListener(this, this.plugin, this.dao, this.socialManager,
         this.keyboard, this.geoIp
     ));
     this.server.getEventManager().register(this, new ReloadListener(this));

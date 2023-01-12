@@ -90,6 +90,12 @@ public class Settings extends YamlConfig {
     })
     public boolean REVERSE_YES_NO_BUTTONS = false;
 
+    @Comment({
+        "false - players with social 2FA enabled should enter the password",
+        "true - players with social 2FA enabled can login without the password"
+    })
+    public boolean AUTH_2FA_WITHOUT_PASSWORD = false;
+
     @Create
     public MAIN.VK VK;
 
@@ -134,7 +140,7 @@ public class Settings extends YamlConfig {
       @Comment({
           "Available placeholders: {CITY}, {COUNTRY}"
       })
-      public String FORMAT = "country";
+      public String FORMAT = "{CITY}, {COUNTRY}";
       @Comment("ISO 639-1")
       public String LOCALE = "en";
       @Comment({

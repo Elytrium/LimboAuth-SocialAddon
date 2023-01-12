@@ -27,6 +27,8 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
+import net.elytrium.limboapi.api.player.LimboPlayer;
+import net.elytrium.limboauth.LimboAuth;
 import net.elytrium.limboauth.event.AuthUnregisterEvent;
 import net.elytrium.limboauth.event.PostAuthorizationEvent;
 import net.elytrium.limboauth.event.PostRegisterEvent;
@@ -35,6 +37,7 @@ import net.elytrium.limboauth.event.TaskEvent;
 import net.elytrium.limboauth.socialaddon.Addon;
 import net.elytrium.limboauth.socialaddon.Settings;
 import net.elytrium.limboauth.socialaddon.SocialManager;
+import net.elytrium.limboauth.socialaddon.handler.PreLoginLimboSessionHandler;
 import net.elytrium.limboauth.socialaddon.model.SocialPlayer;
 import net.elytrium.limboauth.socialaddon.social.AbstractSocial;
 import net.elytrium.limboauth.socialaddon.utils.GeoIp;
@@ -48,20 +51,25 @@ public class LimboAuthListener {
 
   private final Component blockedAccount = Addon.getSerializer().deserialize(Settings.IMP.MAIN.STRINGS.BLOCK_KICK_MESSAGE);
   private final Component askedKick = Addon.getSerializer().deserialize(Settings.IMP.MAIN.STRINGS.NOTIFY_ASK_KICK_MESSAGE);
+  private final Component askedValidate = Addon.getSerializer().deserialize(Settings.IMP.MAIN.STRINGS.NOTIFY_ASK_VALIDATE_GAME);
+  private final Component linkAnnouncement;
 
   private final Addon addon;
+  private final LimboAuth plugin;
   private final Dao<SocialPlayer, String> socialPlayerDao;
   private final SocialManager socialManager;
 
   private final List<List<AbstractSocial.ButtonItem>> yesNoButtons;
   private final List<List<AbstractSocial.ButtonItem>> keyboard;
-  private final Map<String, PostAuthorizationEvent> sessions = new ConcurrentHashMap<>();
+  private final Map<String, AuthSession> sessions = new ConcurrentHashMap<>();
 
   private final GeoIp geoIp;
+  private final boolean auth2faWithoutPassword = Settings.IMP.MAIN.AUTH_2FA_WITHOUT_PASSWORD;
 
-  public LimboAuthListener(Addon addon, Dao<SocialPlayer, String> socialPlayerDao, SocialManager socialManager,
+  public LimboAuthListener(Addon addon, LimboAuth plugin, Dao<SocialPlayer, String> socialPlayerDao, SocialManager socialManager,
                            List<List<AbstractSocial.ButtonItem>> keyboard, GeoIp geoIp) {
     this.addon = addon;
+    this.plugin = plugin;
     this.socialPlayerDao = socialPlayerDao;
     this.socialManager = socialManager;
     this.keyboard = keyboard;
@@ -89,7 +97,7 @@ public class LimboAuthListener {
       SocialPlayer player = this.queryPlayer(dbField, id);
 
       if (player != null && this.sessions.containsKey(player.getLowercaseNickname())) {
-        this.sessions.get(player.getLowercaseNickname()).completeAndCancel(this.askedKick);
+        this.sessions.get(player.getLowercaseNickname()).getEvent().completeAndCancel(this.askedKick);
         this.socialManager.broadcastMessage(player, Settings.IMP.MAIN.STRINGS.NOTIFY_WARN, this.keyboard);
       }
     });
@@ -98,42 +106,80 @@ public class LimboAuthListener {
       SocialPlayer player = this.queryPlayer(dbField, id);
 
       if (player != null && this.sessions.containsKey(player.getLowercaseNickname())) {
-        this.sessions.get(player.getLowercaseNickname()).complete(TaskEvent.Result.NORMAL);
+        AuthSession authSession = this.sessions.get(player.getLowercaseNickname());
+        if (this.auth2faWithoutPassword) {
+          LimboPlayer limboPlayer = authSession.getPlayer();
+          limboPlayer.disconnect();
+          Player proxyPlayer = limboPlayer.getProxyPlayer();
+          this.plugin.cacheAuthUser(proxyPlayer);
+          this.plugin.updateLoginData(proxyPlayer);
+        } else {
+          authSession.getEvent().complete(TaskEvent.Result.NORMAL);
+        }
+
         this.socialManager.broadcastMessage(player, Settings.IMP.MAIN.STRINGS.NOTIFY_THANKS, this.keyboard);
       }
     });
+
+    if (Settings.IMP.MAIN.STRINGS.LINK_ANNOUNCEMENT == null || Settings.IMP.MAIN.STRINGS.LINK_ANNOUNCEMENT.isEmpty()) {
+      this.linkAnnouncement = null;
+    } else {
+      this.linkAnnouncement = Addon.getSerializer().deserialize(Settings.IMP.MAIN.STRINGS.LINK_ANNOUNCEMENT);
+    }
+  }
+
+  @Subscribe
+  public void onAuth(PreAuthorizationEvent event) {
+    Player proxyPlayer = event.getPlayer();
+    SocialPlayer player = this.queryPlayer(proxyPlayer);
+    if (player != null && player.isBlocked()) {
+      event.cancel(this.blockedAccount);
+    }
+
+    if (this.auth2faWithoutPassword) {
+      if (player != null && player.isTotpEnabled()) {
+        event.setResult(TaskEvent.Result.WAIT);
+        this.plugin.getAuthServer().spawnPlayer(proxyPlayer, new PreLoginLimboSessionHandler(this, event, player));
+      }
+    }
   }
 
   @Subscribe
   public void onAuthCompleted(PostAuthorizationEvent event) {
     Player proxyPlayer = event.getPlayer().getProxyPlayer();
-    SocialPlayer player = this.queryPlayer(proxyPlayer);
-    if (player != null && player.isTotpEnabled() && (player.getDiscordID() != null || player.getVkID() != null || player.getTelegramID() != null)) {
-      event.setResult(TaskEvent.Result.WAIT);
-      this.sessions.put(player.getLowercaseNickname(), event);
+    if (!this.auth2faWithoutPassword) {
+      SocialPlayer player = this.queryPlayer(proxyPlayer);
 
-      String ip = proxyPlayer.getRemoteAddress().getAddress().getHostAddress();
-      this.socialManager.broadcastMessage(player, Settings.IMP.MAIN.STRINGS.NOTIFY_ASK_VALIDATE
-          .replace("{IP}", ip).replace("{LOCATION}", Optional.ofNullable(this.geoIp)
-              .map(nonNullGeo ->
-                  "(" + nonNullGeo.getLocation(ip) + ")").orElse("")), this.yesNoButtons, AbstractSocial.ButtonVisibility.PREFER_INLINE);
-
-      event.getPlayer()
-          .getProxyPlayer()
-          .sendMessage(Addon.getSerializer().deserialize(Settings.IMP.MAIN.STRINGS.NOTIFY_ASK_VALIDATE_GAME));
+      if (player != null && player.isTotpEnabled()) {
+        event.setResult(TaskEvent.Result.WAIT);
+        this.authMainHook(player, event.getPlayer(), event);
+      }
     }
 
-    if (player == null && !Settings.IMP.MAIN.STRINGS.LINK_ANNOUNCEMENT.isEmpty()) {
-      proxyPlayer.sendMessage(Addon.getSerializer().deserialize(Settings.IMP.MAIN.STRINGS.LINK_ANNOUNCEMENT));
+    if (!this.playerExists(proxyPlayer) && this.linkAnnouncement != null) {
+      proxyPlayer.sendMessage(this.linkAnnouncement);
     }
+  }
+
+  public void authMainHook(SocialPlayer player, LimboPlayer limboPlayer, TaskEvent event) {
+    Player proxyPlayer = limboPlayer.getProxyPlayer();
+    this.sessions.put(player.getLowercaseNickname(), new AuthSession(event, limboPlayer));
+
+    String ip = proxyPlayer.getRemoteAddress().getAddress().getHostAddress();
+    this.socialManager.broadcastMessage(player, Settings.IMP.MAIN.STRINGS.NOTIFY_ASK_VALIDATE
+        .replace("{IP}", ip).replace("{LOCATION}", Optional.ofNullable(this.geoIp)
+            .map(nonNullGeo ->
+                "(" + nonNullGeo.getLocation(ip) + ")").orElse("")), this.yesNoButtons, AbstractSocial.ButtonVisibility.PREFER_INLINE);
+
+    proxyPlayer.sendMessage(this.askedValidate);
   }
 
   @Subscribe
   public void onRegisterCompleted(PostRegisterEvent event) {
-    if (!Settings.IMP.MAIN.STRINGS.LINK_ANNOUNCEMENT.isEmpty()) {
+    if (this.linkAnnouncement != null) {
       event.getPlayer()
           .getProxyPlayer()
-          .sendMessage(Addon.getSerializer().deserialize(Settings.IMP.MAIN.STRINGS.LINK_ANNOUNCEMENT));
+          .sendMessage(this.linkAnnouncement);
     }
   }
 
@@ -169,11 +215,11 @@ public class LimboAuthListener {
     this.addon.unregisterPlayer(event.getNickname());
   }
 
-  @Subscribe
-  public void onAuth(PreAuthorizationEvent event) {
-    SocialPlayer player = this.queryPlayer(event.getPlayer());
-    if (player != null && player.isBlocked()) {
-      event.cancel(this.blockedAccount);
+  private boolean playerExists(Player player) {
+    try {
+      return this.socialPlayerDao.idExists(player.getUsername().toLowerCase(Locale.ROOT));
+    } catch (SQLException e) {
+      throw new IllegalStateException(e);
     }
   }
 
@@ -196,6 +242,24 @@ public class LimboAuthListener {
       return l.get(0);
     } catch (SQLException e) {
       throw new IllegalStateException(e);
+    }
+  }
+
+  private static final class AuthSession {
+    private final TaskEvent event;
+    private final LimboPlayer player;
+
+    private AuthSession(TaskEvent event, LimboPlayer player) {
+      this.event = event;
+      this.player = player;
+    }
+
+    public TaskEvent getEvent() {
+      return this.event;
+    }
+
+    public LimboPlayer getPlayer() {
+      return this.player;
     }
   }
 }

@@ -38,21 +38,21 @@ repositories {
 }
 
 dependencies {
-    compileOnly("net.elytrium:limboapi-api:1.0.7")
-    compileOnly("net.elytrium:limboauth:1.0.8-SNAPSHOT")
-    compileOnly("com.velocitypowered:velocity-api:3.1.2-SNAPSHOT")
-    annotationProcessor("com.velocitypowered:velocity-api:3.1.2-SNAPSHOT")
+    compileOnly("net.elytrium:limboapi-api:1.0.9")
+    compileOnly("net.elytrium:limboauth:1.0.9")
+    compileOnly("com.velocitypowered:velocity-api:3.2.0-SNAPSHOT")
+    annotationProcessor("com.velocitypowered:velocity-api:3.2.0-SNAPSHOT")
 
     implementation("net.dv8tion:JDA:5.0.0-alpha.9") {
         exclude module: 'opus-java'
     }
-    implementation('org.telegram:telegrambots:6.0.1')
+    implementation('org.telegram:telegrambots:6.1.0')
     implementation("com.vk.api:sdk:1.0.14")
 
     implementation('org.bstats:bstats-velocity:3.0.0')
-    compileOnly('com.github.spotbugs:spotbugs-annotations:4.6.0')
+    compileOnly('com.github.spotbugs:spotbugs-annotations:4.7.3')
 
-    implementation("com.maxmind.geoip2:geoip2:3.0.1")
+    implementation('com.maxmind.geoip2:geoip2:4.0.0')
     implementation("org.apache.commons:commons-compress:1.21")
 }
 
