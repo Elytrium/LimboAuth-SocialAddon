@@ -140,7 +140,7 @@ public class Settings extends YamlConfig {
           "required-roles: ",
           " - 1234567890"
       })
-      public List<String> REQUIRED_ROLES = List.of();
+      public List<Object> REQUIRED_ROLES = List.of();
       @Comment({
           "It's better to keep this option enabled if you have set required-roles config option",
           "Requires SERVER MEMBERS INTENT to be enabled in the bot settings on the Discord Developer Portal"

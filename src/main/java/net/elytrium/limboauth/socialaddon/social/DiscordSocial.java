@@ -17,9 +17,9 @@
 
 package net.elytrium.limboauth.socialaddon.social;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
-import java.util.Objects;
 import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 import javax.security.auth.login.LoginException;
@@ -178,10 +178,22 @@ public class DiscordSocial extends AbstractSocial {
     private final SocialButtonListener onButtonClicked;
 
     Listener(JDA jda, SocialMessageListener onMessageReceived, SocialButtonListener onButtonClicked) {
-      this.requiredRoles = Settings.IMP.MAIN.DISCORD.REQUIRED_ROLES.stream()
-          .map(jda::getRoleById)
-          .filter(Objects::nonNull)
-          .collect(Collectors.toList());
+      List<Role> list = new ArrayList<>();
+      for (Object requiredRole : Settings.IMP.MAIN.DISCORD.REQUIRED_ROLES) {
+        Role roleById;
+        if (requiredRole instanceof Long) {
+          roleById = jda.getRoleById((Long) requiredRole);
+        } else if (requiredRole instanceof String) {
+          roleById = jda.getRoleById((String) requiredRole);
+        } else {
+          throw new IllegalArgumentException("Required-roles entry cannot be of class " + requiredRole.getClass().getName());
+        }
+
+        if (roleById != null) {
+          list.add(roleById);
+        }
+      }
+      this.requiredRoles = list;
       this.onMessageReceived = onMessageReceived;
       this.onButtonClicked = onButtonClicked;
     }
