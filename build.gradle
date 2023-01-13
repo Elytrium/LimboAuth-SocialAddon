@@ -9,7 +9,7 @@ plugins {
 }
 
 setGroup("net.elytrium")
-setVersion("1.0.5")
+setVersion("1.0.6")
 
 compileJava {
     getOptions().setEncoding("UTF-8")
@@ -38,22 +38,22 @@ repositories {
 }
 
 dependencies {
-    compileOnly("net.elytrium:limboapi-api:1.0.9")
-    compileOnly("net.elytrium:limboauth:1.0.9")
-    compileOnly("com.velocitypowered:velocity-api:3.2.0-SNAPSHOT")
-    annotationProcessor("com.velocitypowered:velocity-api:3.2.0-SNAPSHOT")
+    compileOnly("net.elytrium.limboapi:api:$limboapiVersion")
+    compileOnly("net.elytrium:limboauth:$limboauthVersion")
+    compileOnly("com.velocitypowered:velocity-api:$velocityVersion")
+    annotationProcessor("com.velocitypowered:velocity-api:$velocityVersion")
 
-    implementation("net.dv8tion:JDA:5.0.0-alpha.9") {
-        exclude module: 'opus-java'
+    implementation("net.dv8tion:JDA:$jdaVersion") {
+        exclude module: "opus-java"
     }
-    implementation('org.telegram:telegrambots:6.1.0')
-    implementation("com.vk.api:sdk:1.0.14")
+    implementation("org.telegram:telegrambots:$telegrambotsVersion")
+    implementation("com.vk.api:sdk:$vkVersion")
 
-    implementation('org.bstats:bstats-velocity:3.0.0')
-    compileOnly('com.github.spotbugs:spotbugs-annotations:4.7.3')
+    implementation("com.maxmind.geoip2:geoip2:$geoipVersion")
+    implementation("org.apache.commons:commons-compress:$apacheCompressCommonsVersion")
 
-    implementation('com.maxmind.geoip2:geoip2:4.0.0')
-    implementation("org.apache.commons:commons-compress:1.21")
+    implementation("org.bstats:bstats-velocity:$bstatsVersion")
+    compileOnly("com.github.spotbugs:spotbugs-annotations:$spotbugsVersion")
 }
 
 shadowJar {
@@ -77,6 +77,7 @@ shadowJar {
     relocate("net.dv8tion.jda", "net.elytrium.limboauth.socialaddon.thirdparty.net.dv8tion.jda")
     relocate("org.telegram.telegrambots", "net.elytrium.limboauth.socialaddon.thirdparty.org.telegram.telegrambots")
     relocate("com.vk.api", "net.elytrium.limboauth.socialaddon.thirdparty.com.vk.api")
+    relocate("net.elytrium.commons", "net.elytrium.limboapi.thirdparty.commons")
 }
 
 license {

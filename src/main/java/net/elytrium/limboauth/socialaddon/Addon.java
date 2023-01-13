@@ -42,9 +42,9 @@ import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.regex.Pattern;
-import net.elytrium.java.commons.mc.serialization.Serializer;
-import net.elytrium.java.commons.mc.serialization.Serializers;
-import net.elytrium.java.commons.updates.UpdatesChecker;
+import net.elytrium.commons.kyori.serialization.Serializer;
+import net.elytrium.commons.kyori.serialization.Serializers;
+import net.elytrium.commons.utils.updates.UpdatesChecker;
 import net.elytrium.limboauth.LimboAuth;
 import net.elytrium.limboauth.handler.AuthSessionHandler;
 import net.elytrium.limboauth.model.RegisteredPlayer;
@@ -89,7 +89,7 @@ public class Addon {
   private static final String KICK_BTN = "kick";
   private static final String RESTORE_BTN = "restore";
   private static final String UNLINK_BTN = "unlink";
-  private static final String PLUGIN_MINIMUM_VERSION = "1.0.9";
+  private static final String PLUGIN_MINIMUM_VERSION = "1.1.0";
 
   private static Serializer SERIALIZER;
 

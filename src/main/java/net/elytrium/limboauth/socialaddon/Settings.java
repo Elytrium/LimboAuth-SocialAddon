@@ -19,8 +19,8 @@ package net.elytrium.limboauth.socialaddon;
 
 import java.util.List;
 import net.dv8tion.jda.api.entities.Activity;
-import net.elytrium.java.commons.config.YamlConfig;
-import net.elytrium.java.commons.mc.serialization.Serializers;
+import net.elytrium.commons.config.YamlConfig;
+import net.elytrium.commons.kyori.serialization.Serializers;
 
 public class Settings extends YamlConfig {
 
