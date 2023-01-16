@@ -75,7 +75,8 @@ public class Settings extends YamlConfig {
     @Comment("Allow linking social to the player, who already has linked this type of social")
     public boolean ALLOW_ACCOUNT_RELINK = true;
 
-    public List<String> AFTER_LINKAGE_COMMANDS = List.of("alert {NICKNAME} ({UUID}) has linked a social account");
+    public List<String> AFTER_LINKAGE_COMMANDS = List.of("alert {NICKNAME} has linked a social account");
+    public List<String> AFTER_UNLINKAGE_COMMANDS = List.of();
     public List<String> START_MESSAGES = List.of("/start", "Начать");
     public String START_REPLY = "Send '!account link <nickname>' to link your account";
 
@@ -167,8 +168,9 @@ public class Settings extends YamlConfig {
     public static class GEOIP {
       public boolean ENABLED = false;
       @Comment({
-          "Available placeholders: {CITY}, {COUNTRY}"
+          "Available placeholders: {CITY}, {COUNTRY}, {LEAST_SPECIFIC_SUBDIVISION}, {MOST_SPECIFIC_SUBDIVISION}"
       })
+      @Placeholders({"{CITY}", "{COUNTRY}", "{LEAST_SPECIFIC_SUBDIVISION}", "{MOST_SPECIFIC_SUBDIVISION}"})
       public String FORMAT = "{CITY}, {COUNTRY}";
       @Comment("ISO 639-1")
       public String LOCALE = "en";
@@ -184,7 +186,11 @@ public class Settings extends YamlConfig {
       public long UPDATE_INTERVAL = 1209600000L;
       public String DEFAULT_VALUE = "Unknown";
 
+      @Comment("It is not necessary to change {LICENSE_KEY}")
+      @Placeholders({"{LICENSE_KEY}"})
       public String MMDB_CITY_DOWNLOAD = "https://download.maxmind.com/app/geoip_download?edition_id=GeoLite2-City&license_key={LICENSE_KEY}&suffix=tar.gz";
+
+      @Placeholders({"{LICENSE_KEY}"})
       public String MMDB_COUNTRY_DOWNLOAD = "https://download.maxmind.com/app/geoip_download?edition_id=GeoLite2-Country&license_key={LICENSE_KEY}&suffix=tar.gz";
     }
 
@@ -193,24 +199,31 @@ public class Settings extends YamlConfig {
 
     public static class STRINGS {
 
+      @Placeholders({"{NICKNAME}"})
       public String LINK_CMD_USAGE = "{PRFX} Send '!account link {NICKNAME}' to our Social Bot{NL} VK: vk.com/123{NL} DS: Bot#0000{NL} TG: @bot";
+      @Placeholders({"{NICKNAME}"})
       public String LINK_WRONG_CODE = "{PRFX} Wrong code, run '!account link {NICKNAME}' again";
+      public String LINK_SUCCESS_GAME = "{PRFX} Social was successfully linked";
       public String LINK_SUCCESS = "✅ Social was successfully linked{NL}Use '!keyboard' to show keyboard";
       public String LINK_ALREADY = "Account is already linked";
       public String LINK_SOCIAL_REGISTER_CMD_USAGE = "You didn't specify a nickname. Enter '!account register <nickname>'";
       public String LINK_SOCIAL_CMD_USAGE = "You didn't specify a nickname. Enter '!account link <nickname>'";
       public String LINK_UNKNOWN_ACCOUNT = "There is no account with this nickname";
+      @Placeholders({"{CODE}"})
       public String LINK_CODE = "🔑 Enter '/addsocial {CODE}' in game to complete account linking";
       public String REGISTER_INCORRECT_NICKNAME = "There is no account with this nickname";
       public String REGISTER_TAKEN_NICKNAME = "This nickname is already taken";
+      @Placeholders({"{PASSWORD}"})
       public String REGISTER_SUCCESS = "✅ Account was successfully registered{NL}Your password: {PASSWORD}{NL}Use '!keyboard' to show keyboard";
 
       public String FORCE_UNLINK_CMD_USAGE = "{PRFX} Usage: /forcesocialunregister <username>";
 
       public String NOTIFY_LEAVE = "➖ You've left the server";
+      @Placeholders({"{IP}", "{LOCATION}"})
       public String NOTIFY_JOIN = "➕ You've joined the server {NL}🌐 IP: {IP} {LOCATION}{NL}You can block your account if that is not you";
 
       public String NOTIFY_ASK_KICK_MESSAGE = "{PRFX} You were kicked by the Social";
+      @Placeholders({"{IP}", "{LOCATION}"})
       public String NOTIFY_ASK_VALIDATE = "❔ Someone tries to join the server.{NL}🌐 IP: {IP} {LOCATION}{NL}Is it you?";
       public String NOTIFY_ASK_VALIDATE_GAME = "{PRFX} You have 2FA enabled, check your social and validate your login!";
       public String NOTIFY_ASK_YES = "It's me";
@@ -220,24 +233,34 @@ public class Settings extends YamlConfig {
 
       public String BLOCK_TOGGLE_BTN = "Toggle block";
       public String BLOCK_KICK_MESSAGE = "{PRFX} Your account was blocked by the Social";
+      @Placeholders({"{NICKNAME}"})
       public String BLOCK_SUCCESS = "Account {NICKNAME} was successfully blocked";
+      @Placeholders({"{NICKNAME}"})
       public String UNBLOCK_SUCCESS = "Account {NICKNAME} was successfully unblocked";
 
+      @Placeholders({"{NICKNAME}"})
       public String TOTP_ENABLE_SUCCESS = "Account {NICKNAME} now uses 2FA";
+      @Placeholders({"{NICKNAME}"})
       public String TOTP_DISABLE_SUCCESS = "Account {NICKNAME} doesn't use 2FA anymore";
 
+      @Placeholders({"{NICKNAME}"})
       public String NOTIFY_ENABLE_SUCCESS = "Account {NICKNAME} now receives notifications";
+      @Placeholders({"{NICKNAME}"})
       public String NOTIFY_DISABLE_SUCCESS = "Account {NICKNAME} doesn't receive notifications anymore";
 
       public String KICK_IS_OFFLINE = "Cannot kick player - player is offline";
-      public String KICK_SUCCESS = "Player was successfully kicked";
+      @Placeholders("{NICKNAME}")
+      public String KICK_SUCCESS = "Player {NICKNAME} was successfully kicked";
       public String KICK_GAME_MESSAGE = "{PRFX} You were kicked by the Social";
 
       public String RESTORE_BTN = "Restore";
+      @Placeholders({"{NICKNAME}", "{PASSWORD}"})
       public String RESTORE_MSG = "The new password for {NICKNAME} is: {PASSWORD}";
+      @Placeholders({"{NICKNAME}"})
       public String RESTORE_MSG_PREMIUM = "We can't change your password, {NICKNAME}, perhaps you are a premium player.";
 
       public String INFO_BTN = "Info";
+      @Placeholders({"{NICKNAME}", "{SERVER}", "{IP}", "{LOCATION}", "{NOTIFY_STATUS}", "{BLOCK_STATUS}", "{TOTP_STATUS}"})
       public String INFO_MSG = "👤 IGN: {NICKNAME}{NL}🌍 Current status: {SERVER}{NL}🌐 IP: {IP} {LOCATION}{NL}⏰ Notifications: {NOTIFY_STATUS}{NL}❌ Blocked: {BLOCK_STATUS}{NL}🔑 2FA: {TOTP_STATUS}";
       public String STATUS_OFFLINE = "OFFLINE";
       public String NOTIFY_ENABLED = "Enabled";
@@ -253,6 +276,7 @@ public class Settings extends YamlConfig {
       public String UNLINK_BTN = "Unlink social";
       public String UNLINK_DISABLED = "Unlinking disabled";
       public String UNLINK_SUCCESS = "Unlink successful";
+      public String UNLINK_SUCCESS_GAME = "{PRFX} Unlink successful";
       public String UNLINK_BLOCK_CONFLICT = "You cannot unlink the social while your account is blocked. Unblock it first";
       public String UNLINK_2FA_CONFLICT = "You cannot unlink the social while 2FA is enabled. Disable it first";
 

@@ -19,24 +19,20 @@ package net.elytrium.limboauth.socialaddon.command;
 
 import com.velocitypowered.api.command.CommandSource;
 import com.velocitypowered.api.command.SimpleCommand;
-import com.velocitypowered.api.permission.Tristate;
 import com.velocitypowered.api.proxy.Player;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.Locale;
+import net.elytrium.commons.config.Placeholders;
 import net.elytrium.limboauth.socialaddon.Addon;
 import net.elytrium.limboauth.socialaddon.Settings;
-import net.elytrium.limboauth.socialaddon.model.SocialPlayer;
-import net.elytrium.limboauth.thirdparty.com.j256.ormlite.dao.Dao;
 
 public class ValidateLinkCommand implements SimpleCommand {
 
   private final Addon addon;
-  private final Dao<SocialPlayer, String> socialDao;
 
-  public ValidateLinkCommand(Addon addon, Dao<SocialPlayer, String> socialDao) {
+  public ValidateLinkCommand(Addon addon) {
     this.addon = addon;
-    this.socialDao = socialDao;
   }
 
   @Override
@@ -57,18 +53,13 @@ public class ValidateLinkCommand implements SimpleCommand {
             if (validCode == Integer.parseInt(args[0])) {
               Addon.TempAccount tempAccount = this.addon.getTempAccount(username);
               this.addon.linkSocial(username, tempAccount.getDbField(), tempAccount.getId());
-
-              Settings.IMP.MAIN.AFTER_LINKAGE_COMMANDS.forEach(command ->
-                  this.addon.getServer().getCommandManager().executeAsync(p -> Tristate.TRUE,
-                      command.replace("{NICKNAME}", player.getUsername()).replace("{UUID}", player.getUniqueId().toString())));
-
               this.addon.getSocialManager().registerHook(tempAccount.getDbField(), tempAccount.getId());
-
               this.addon.getSocialManager()
                   .broadcastMessage(tempAccount.getDbField(), tempAccount.getId(), Settings.IMP.MAIN.STRINGS.LINK_SUCCESS, this.addon.getKeyboard());
+              player.sendMessage(Addon.getSerializer().deserialize(Settings.IMP.MAIN.STRINGS.LINK_SUCCESS_GAME));
             } else {
               source.sendMessage(Addon.getSerializer()
-                  .deserialize(Settings.IMP.MAIN.STRINGS.LINK_WRONG_CODE.replace("{NICKNAME}", player.getUsername())));
+                  .deserialize(Placeholders.replace(Settings.IMP.MAIN.STRINGS.LINK_WRONG_CODE, player.getUsername())));
             }
 
             this.addon.removeCode(username);
@@ -86,7 +77,7 @@ public class ValidateLinkCommand implements SimpleCommand {
 
   private void sendUsage(Player player) {
     player.sendMessage(Addon.getSerializer()
-        .deserialize(Settings.IMP.MAIN.STRINGS.LINK_CMD_USAGE.replace("{NICKNAME}", player.getUsername())));
+        .deserialize(Placeholders.replace(Settings.IMP.MAIN.STRINGS.LINK_CMD_USAGE, player.getUsername())));
   }
 
   @Override

@@ -22,6 +22,7 @@ import com.maxmind.geoip2.DatabaseReader;
 import com.maxmind.geoip2.exception.GeoIp2Exception;
 import com.maxmind.geoip2.model.CityResponse;
 import com.maxmind.geoip2.model.CountryResponse;
+import com.maxmind.geoip2.record.AbstractNamedRecord;
 import java.io.ByteArrayInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -30,6 +31,7 @@ import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.zip.GZIPInputStream;
+import net.elytrium.commons.config.Placeholders;
 import net.elytrium.limboauth.socialaddon.Settings;
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
@@ -47,9 +49,8 @@ public class GeoIp {
       Path path = dataPath.resolve(this.cityEnabled ? "city.mmdb" : "country.mmdb");
       if (!Files.exists(path) || (System.currentTimeMillis() - path.toFile().lastModified())
           > Settings.IMP.MAIN.GEOIP.UPDATE_INTERVAL) {
-        String uri = (this.cityEnabled
-            ? Settings.IMP.MAIN.GEOIP.MMDB_CITY_DOWNLOAD : Settings.IMP.MAIN.GEOIP.MMDB_COUNTRY_DOWNLOAD)
-            .replace("{LICENSE_KEY}", Settings.IMP.MAIN.GEOIP.LICENSE_KEY);
+        String uri = Placeholders.replace(this.cityEnabled ? Settings.IMP.MAIN.GEOIP.MMDB_CITY_DOWNLOAD
+                : Settings.IMP.MAIN.GEOIP.MMDB_COUNTRY_DOWNLOAD, Settings.IMP.MAIN.GEOIP.LICENSE_KEY);
 
         ByteArrayInputStream byteStream = new ByteArrayInputStream(IOUtils.toByteArray(new URL(uri).openStream()));
         try (GZIPInputStream gzip = new GZIPInputStream(byteStream);
@@ -77,26 +78,32 @@ public class GeoIp {
     }
   }
 
-
   public String getLocation(String ip) {
     try {
       InetAddress address = InetAddress.getByName(ip);
       String city = "";
       String country = "";
+      String leastSpecificSubdivision = "";
+      String mostSpecificSubdivision = "";
       if (this.cityEnabled) {
         CityResponse response = this.reader.city(address);
-        city = response.getCity().getNames().getOrDefault(Settings.IMP.MAIN.GEOIP.LOCALE, Settings.IMP.MAIN.GEOIP.DEFAULT_VALUE);
-        country = response.getCountry().getNames().getOrDefault(Settings.IMP.MAIN.GEOIP.LOCALE, Settings.IMP.MAIN.GEOIP.DEFAULT_VALUE);
+        city = getName(response.getCity());
+        country = getName(response.getCountry());
+        leastSpecificSubdivision = getName(response.getLeastSpecificSubdivision());
+        mostSpecificSubdivision = getName(response.getMostSpecificSubdivision());
       } else {
         CountryResponse response = this.reader.country(address);
-        country = response.getCountry().getNames().getOrDefault(Settings.IMP.MAIN.GEOIP.LOCALE, Settings.IMP.MAIN.GEOIP.DEFAULT_VALUE);
+        country = getName(response.getCountry());
       }
 
-      return Settings.IMP.MAIN.GEOIP.FORMAT.replace("{CITY}", city).replace("{COUNTRY}", country);
+      return Placeholders.replace(Settings.IMP.MAIN.GEOIP.FORMAT, city, country, leastSpecificSubdivision, mostSpecificSubdivision);
     } catch (IOException | GeoIp2Exception e) {
       e.printStackTrace(); // printStackTrace is necessary there
       return Settings.IMP.MAIN.GEOIP.DEFAULT_VALUE;
     }
   }
 
+  private static String getName(AbstractNamedRecord response) {
+    return response.getNames().getOrDefault(Settings.IMP.MAIN.GEOIP.LOCALE, Settings.IMP.MAIN.GEOIP.DEFAULT_VALUE);
+  }
 }

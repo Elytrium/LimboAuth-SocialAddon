@@ -22,6 +22,7 @@ import com.velocitypowered.api.command.CommandManager;
 import com.velocitypowered.api.event.PostOrder;
 import com.velocitypowered.api.event.Subscribe;
 import com.velocitypowered.api.event.proxy.ProxyInitializeEvent;
+import com.velocitypowered.api.permission.Tristate;
 import com.velocitypowered.api.plugin.Dependency;
 import com.velocitypowered.api.plugin.Plugin;
 import com.velocitypowered.api.plugin.PluginContainer;
@@ -34,6 +35,7 @@ import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.io.File;
 import java.nio.file.Path;
 import java.sql.SQLException;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -42,11 +44,11 @@ import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.regex.Pattern;
+import net.elytrium.commons.config.Placeholders;
 import net.elytrium.commons.kyori.serialization.Serializer;
 import net.elytrium.commons.kyori.serialization.Serializers;
 import net.elytrium.commons.utils.updates.UpdatesChecker;
 import net.elytrium.limboauth.LimboAuth;
-import net.elytrium.limboauth.handler.AuthSessionHandler;
 import net.elytrium.limboauth.model.RegisteredPlayer;
 import net.elytrium.limboauth.socialaddon.command.ForceSocialUnlinkCommand;
 import net.elytrium.limboauth.socialaddon.command.ValidateLinkCommand;
@@ -126,7 +128,7 @@ public class Addon {
 
     Optional<PluginContainer> container = this.server.getPluginManager().getPlugin("limboauth");
     String version = container.map(PluginContainer::getDescription).flatMap(PluginDescription::getVersion).orElseThrow();
-    
+
     if (!UpdatesChecker.checkVersion(PLUGIN_MINIMUM_VERSION, version)) {
       throw new IllegalStateException("Incorrect version of LimboAuth plugin, the addon requires version " + PLUGIN_MINIMUM_VERSION + " or newer");
     }
@@ -222,25 +224,14 @@ public class Addon {
 
           String newPassword = Long.toHexString(Double.doubleToLongBits(Math.random()));
 
-          RegisteredPlayer player = new RegisteredPlayer(
-              account,
-              lowercaseNickname,
-              AuthSessionHandler.genHash(newPassword),
-              "",
-              "",
-              System.currentTimeMillis(),
-              "",
-              "",
-              "",
-              0L
-          );
+          RegisteredPlayer player = new RegisteredPlayer(account, "", "").setPassword(newPassword);
 
           this.plugin.getPlayerDao().create(player);
 
           this.linkSocial(lowercaseNickname, dbField, id);
 
           this.socialManager.broadcastMessage(dbField, id,
-              Settings.IMP.MAIN.STRINGS.REGISTER_SUCCESS.replace("{PASSWORD}", newPassword));
+              Placeholders.replace(Settings.IMP.MAIN.STRINGS.REGISTER_SUCCESS, newPassword));
         }
       }
 
@@ -267,7 +258,7 @@ public class Addon {
           int code = ThreadLocalRandom.current().nextInt(Settings.IMP.MAIN.CODE_LOWER_BOUND, Settings.IMP.MAIN.CODE_UPPER_BOUND);
           this.codeMap.put(account, code);
           this.requestedReverseMap.put(account, new TempAccount(dbField, id));
-          this.socialManager.broadcastMessage(dbField, id, Settings.IMP.MAIN.STRINGS.LINK_CODE.replace("{CODE}", String.valueOf(code)));
+          this.socialManager.broadcastMessage(dbField, id, Placeholders.replace(Settings.IMP.MAIN.STRINGS.LINK_CODE, String.valueOf(code)));
 
           return;
         }
@@ -310,23 +301,21 @@ public class Addon {
         }
 
         ip = player1.getRemoteAddress().getAddress().getHostAddress();
-        location = Optional.ofNullable(this.geoIp)
-            .map(nonNullGeo -> "(" + nonNullGeo.getLocation(ip) + ")").orElse("");
+        location = Optional.ofNullable(this.geoIp).map(nonNullGeo -> nonNullGeo.getLocation(ip)).orElse("");
       } else {
         server = Settings.IMP.MAIN.STRINGS.STATUS_OFFLINE;
         ip = Settings.IMP.MAIN.STRINGS.STATUS_OFFLINE;
         location = "";
       }
 
-      this.socialManager.broadcastMessage(dbField, id, Settings.IMP.MAIN.STRINGS.INFO_MSG
-              .replace("{NICKNAME}", player.getLowercaseNickname())
-              .replace("{SERVER}", server)
-              .replace("{IP}", ip)
-              .replace("{LOCATION}", location)
-              .replace("{NOTIFY_STATUS}", player.isNotifyEnabled()
-                  ? Settings.IMP.MAIN.STRINGS.NOTIFY_ENABLED : Settings.IMP.MAIN.STRINGS.NOTIFY_DISABLED)
-              .replace("{BLOCK_STATUS}", player.isBlocked() ? Settings.IMP.MAIN.STRINGS.BLOCK_ENABLED : Settings.IMP.MAIN.STRINGS.BLOCK_DISABLED)
-              .replace("{TOTP_STATUS}", player.isTotpEnabled() ? Settings.IMP.MAIN.STRINGS.TOTP_ENABLED : Settings.IMP.MAIN.STRINGS.TOTP_DISABLED),
+      this.socialManager.broadcastMessage(dbField, id, Placeholders.replace(Settings.IMP.MAIN.STRINGS.INFO_MSG,
+              player.getLowercaseNickname(),
+              server,
+              ip,
+              location,
+              player.isNotifyEnabled() ? Settings.IMP.MAIN.STRINGS.NOTIFY_ENABLED : Settings.IMP.MAIN.STRINGS.NOTIFY_DISABLED,
+              player.isBlocked() ? Settings.IMP.MAIN.STRINGS.BLOCK_ENABLED : Settings.IMP.MAIN.STRINGS.BLOCK_DISABLED,
+              player.isTotpEnabled() ? Settings.IMP.MAIN.STRINGS.TOTP_ENABLED : Settings.IMP.MAIN.STRINGS.TOTP_DISABLED),
           this.keyboard
       );
     });
@@ -343,7 +332,7 @@ public class Addon {
       if (player.isBlocked()) {
         player.setBlocked(false);
         this.socialManager.broadcastMessage(dbField, id,
-            Settings.IMP.MAIN.STRINGS.UNBLOCK_SUCCESS.replace("{NICKNAME}", player.getLowercaseNickname()), this.keyboard
+            Placeholders.replace(Settings.IMP.MAIN.STRINGS.UNBLOCK_SUCCESS, player.getLowercaseNickname()), this.keyboard
         );
       } else {
         player.setBlocked(true);
@@ -354,7 +343,7 @@ public class Addon {
             .ifPresent(e -> e.disconnect(Addon.getSerializer().deserialize(Settings.IMP.MAIN.STRINGS.KICK_GAME_MESSAGE)));
 
         this.socialManager.broadcastMessage(dbField, id,
-            Settings.IMP.MAIN.STRINGS.BLOCK_SUCCESS.replace("{NICKNAME}", player.getLowercaseNickname()), this.keyboard
+            Placeholders.replace(Settings.IMP.MAIN.STRINGS.BLOCK_SUCCESS, player.getLowercaseNickname()), this.keyboard
         );
       }
 
@@ -373,12 +362,12 @@ public class Addon {
       if (player.isTotpEnabled()) {
         player.setTotpEnabled(false);
         this.socialManager.broadcastMessage(dbField, id,
-            Settings.IMP.MAIN.STRINGS.TOTP_DISABLE_SUCCESS.replace("{NICKNAME}", player.getLowercaseNickname()), this.keyboard
+            Placeholders.replace(Settings.IMP.MAIN.STRINGS.TOTP_DISABLE_SUCCESS, player.getLowercaseNickname()), this.keyboard
         );
       } else {
         player.setTotpEnabled(true);
         this.socialManager.broadcastMessage(dbField, id,
-            Settings.IMP.MAIN.STRINGS.TOTP_ENABLE_SUCCESS.replace("{NICKNAME}", player.getLowercaseNickname()), this.keyboard
+            Placeholders.replace(Settings.IMP.MAIN.STRINGS.TOTP_ENABLE_SUCCESS, player.getLowercaseNickname()), this.keyboard
         );
       }
 
@@ -397,12 +386,12 @@ public class Addon {
       if (player.isNotifyEnabled()) {
         player.setNotifyEnabled(false);
         this.socialManager.broadcastMessage(dbField, id,
-            Settings.IMP.MAIN.STRINGS.NOTIFY_DISABLE_SUCCESS.replace("{NICKNAME}", player.getLowercaseNickname()), this.keyboard
+            Placeholders.replace(Settings.IMP.MAIN.STRINGS.NOTIFY_DISABLE_SUCCESS, player.getLowercaseNickname()), this.keyboard
         );
       } else {
         player.setNotifyEnabled(true);
         this.socialManager.broadcastMessage(dbField, id,
-            Settings.IMP.MAIN.STRINGS.NOTIFY_ENABLE_SUCCESS.replace("{NICKNAME}", player.getLowercaseNickname()), this.keyboard
+            Placeholders.replace(Settings.IMP.MAIN.STRINGS.NOTIFY_ENABLE_SUCCESS, player.getLowercaseNickname()), this.keyboard
         );
       }
 
@@ -423,7 +412,7 @@ public class Addon {
       if (proxyPlayer.isPresent()) {
         proxyPlayer.get().disconnect(Addon.getSerializer().deserialize(Settings.IMP.MAIN.STRINGS.KICK_GAME_MESSAGE));
         this.socialManager.broadcastMessage(dbField, id,
-            Settings.IMP.MAIN.STRINGS.KICK_SUCCESS.replace("{NICKNAME}", player.getLowercaseNickname()), this.keyboard
+            Placeholders.replace(Settings.IMP.MAIN.STRINGS.KICK_SUCCESS, player.getLowercaseNickname()), this.keyboard
         );
       } else {
         this.socialManager.broadcastMessage(dbField, id,
@@ -446,7 +435,7 @@ public class Addon {
       if (Settings.IMP.MAIN.PROHIBIT_PREMIUM_RESTORE
           && this.plugin.isPremiumInternal(player.getLowercaseNickname()).getState() != LimboAuth.PremiumState.CRACKED) {
         this.socialManager.broadcastMessage(dbField, id,
-            Settings.IMP.MAIN.STRINGS.RESTORE_MSG_PREMIUM.replace("{NICKNAME}", player.getLowercaseNickname()),
+            Placeholders.replace(Settings.IMP.MAIN.STRINGS.RESTORE_MSG_PREMIUM, player.getLowercaseNickname()),
             this.keyboard
         );
         return;
@@ -458,17 +447,17 @@ public class Addon {
 
       UpdateBuilder<RegisteredPlayer, String> updateBuilder = playerDao.updateBuilder();
       updateBuilder.where().eq(RegisteredPlayer.LOWERCASE_NICKNAME_FIELD, player.getLowercaseNickname());
-      updateBuilder.updateColumnValue(RegisteredPlayer.HASH_FIELD, AuthSessionHandler.genHash(newPassword));
+      updateBuilder.updateColumnValue(RegisteredPlayer.HASH_FIELD, RegisteredPlayer.genHash(newPassword));
       boolean updated = updateBuilder.update() != 0;
 
       if (updated) {
         this.socialManager.broadcastMessage(dbField, id,
-            Settings.IMP.MAIN.STRINGS.RESTORE_MSG.replace("{NICKNAME}", player.getLowercaseNickname()).replace("{PASSWORD}", newPassword),
+            Placeholders.replace(Settings.IMP.MAIN.STRINGS.RESTORE_MSG, player.getLowercaseNickname(), newPassword),
             this.keyboard
         );
       } else {
         this.socialManager.broadcastMessage(dbField, id,
-            Settings.IMP.MAIN.STRINGS.RESTORE_MSG_PREMIUM.replace("{NICKNAME}", player.getLowercaseNickname()),
+            Placeholders.replace(Settings.IMP.MAIN.STRINGS.RESTORE_MSG_PREMIUM, player.getLowercaseNickname()),
             this.keyboard
         );
       }
@@ -497,9 +486,16 @@ public class Addon {
         return;
       }
 
-      if (Settings.IMP.MAIN.UNLINK_BTN_ALL) {
+      SocialPlayer.DatabaseField.valueOf(dbField).setIdFor(player, null);
+      boolean allUnlinked = Arrays.stream(SocialPlayer.DatabaseField.values())
+          .noneMatch(v -> v.getIdFor(player) != null);
+
+      if (Settings.IMP.MAIN.UNLINK_BTN_ALL || allUnlinked) {
         this.dao.delete(player);
         this.socialManager.unregisterHook(player);
+
+        Settings.IMP.MAIN.AFTER_UNLINKAGE_COMMANDS.forEach(command ->
+            this.server.getCommandManager().executeAsync(p -> Tristate.TRUE, command.replace("{NICKNAME}", player.getLowercaseNickname())));
       } else {
         UpdateBuilder<SocialPlayer, String> updateBuilder = this.dao.updateBuilder();
         updateBuilder.where().eq(SocialPlayer.LOWERCASE_NICKNAME_FIELD, player.getLowercaseNickname());
@@ -510,6 +506,8 @@ public class Addon {
       }
 
       this.socialManager.broadcastMessage(dbField, id, Settings.IMP.MAIN.STRINGS.UNLINK_SUCCESS);
+      this.server.getPlayer(player.getLowercaseNickname()).ifPresent(p ->
+          p.sendMessage(SERIALIZER.deserialize(Settings.IMP.MAIN.STRINGS.UNLINK_SUCCESS_GAME)));
     });
   }
 
@@ -536,7 +534,7 @@ public class Addon {
 
     commandManager.register(
         Settings.IMP.MAIN.LINKAGE_MAIN_CMD,
-        new ValidateLinkCommand(this, this.dao),
+        new ValidateLinkCommand(this),
         Settings.IMP.MAIN.LINKAGE_ALIAS_CMD.toArray(new String[0])
     );
     commandManager.register(
@@ -559,9 +557,13 @@ public class Addon {
   }
 
   public void linkSocial(String lowercaseNickname, String dbField, Long id) throws SQLException {
-    if (this.dao.queryForId(lowercaseNickname) == null) {
+    SocialPlayer socialPlayer = this.dao.queryForId(lowercaseNickname);
+    if (socialPlayer == null) {
+      Settings.IMP.MAIN.AFTER_LINKAGE_COMMANDS.forEach(command ->
+          this.server.getCommandManager().executeAsync(p -> Tristate.TRUE, command.replace("{NICKNAME}", lowercaseNickname)));
+
       this.dao.create(new SocialPlayer(lowercaseNickname));
-    } else if (!Settings.IMP.MAIN.ALLOW_ACCOUNT_RELINK) {
+    } else if (!Settings.IMP.MAIN.ALLOW_ACCOUNT_RELINK && SocialPlayer.DatabaseField.valueOf(dbField).getIdFor(socialPlayer) != null) {
       this.socialManager.broadcastMessage(dbField, id, Settings.IMP.MAIN.STRINGS.LINK_ALREADY);
       return;
     }

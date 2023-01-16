@@ -27,6 +27,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
+import net.elytrium.commons.config.Placeholders;
 import net.elytrium.limboapi.api.player.LimboPlayer;
 import net.elytrium.limboauth.LimboAuth;
 import net.elytrium.limboauth.event.AuthUnregisterEvent;
@@ -166,10 +167,9 @@ public class LimboAuthListener {
     this.sessions.put(player.getLowercaseNickname(), new AuthSession(event, limboPlayer));
 
     String ip = proxyPlayer.getRemoteAddress().getAddress().getHostAddress();
-    this.socialManager.broadcastMessage(player, Settings.IMP.MAIN.STRINGS.NOTIFY_ASK_VALIDATE
-        .replace("{IP}", ip).replace("{LOCATION}", Optional.ofNullable(this.geoIp)
-            .map(nonNullGeo ->
-                "(" + nonNullGeo.getLocation(ip) + ")").orElse("")), this.yesNoButtons, AbstractSocial.ButtonVisibility.PREFER_INLINE);
+    this.socialManager.broadcastMessage(player, Placeholders.replace(Settings.IMP.MAIN.STRINGS.NOTIFY_ASK_VALIDATE,
+            ip, Optional.ofNullable(this.geoIp).map(nonNullGeo -> nonNullGeo.getLocation(ip)).orElse("")),
+        this.yesNoButtons, AbstractSocial.ButtonVisibility.PREFER_INLINE);
 
     proxyPlayer.sendMessage(this.askedValidate);
   }
@@ -188,9 +188,9 @@ public class LimboAuthListener {
     SocialPlayer player = this.queryPlayer(event.getPlayer());
     if (player != null && Settings.IMP.MAIN.ENABLE_NOTIFY && player.isNotifyEnabled()) {
       String ip = event.getPlayer().getRemoteAddress().getAddress().getHostAddress();
-      this.socialManager.broadcastMessage(player, Settings.IMP.MAIN.STRINGS.NOTIFY_JOIN.replace("{IP}", ip)
-          .replace("{LOCATION}", Optional.ofNullable(this.geoIp)
-              .map(nonNullGeo -> "(" + nonNullGeo.getLocation(ip) + ")").orElse("")), this.keyboard);
+      this.socialManager.broadcastMessage(player, Placeholders.replace(Settings.IMP.MAIN.STRINGS.NOTIFY_JOIN,
+          ip,
+          Optional.ofNullable(this.geoIp).map(nonNullGeo -> nonNullGeo.getLocation(ip)).orElse("")), this.keyboard);
     }
   }
 

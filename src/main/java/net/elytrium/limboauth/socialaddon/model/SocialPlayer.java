@@ -17,8 +17,9 @@
 
 package net.elytrium.limboauth.socialaddon.model;
 
+import java.util.function.BiConsumer;
+import java.util.function.Function;
 import net.elytrium.limboauth.socialaddon.Settings;
-import net.elytrium.limboauth.thirdparty.com.j256.ormlite.field.DatabaseField;
 import net.elytrium.limboauth.thirdparty.com.j256.ormlite.table.DatabaseTable;
 
 @SuppressWarnings("unused")
@@ -33,25 +34,25 @@ public class SocialPlayer {
   public static final String TOTP_ENABLED_FIELD = "TOTP_ENABLED";
   public static final String NOTIFY_ENABLED_FIELD = "NOTIFY_ENABLED";
 
-  @DatabaseField(id = true, columnName = LOWERCASE_NICKNAME_FIELD)
+  @net.elytrium.limboauth.thirdparty.com.j256.ormlite.field.DatabaseField(id = true, columnName = LOWERCASE_NICKNAME_FIELD)
   private String lowercaseNickname;
 
-  @DatabaseField(columnName = VK_DB_FIELD)
+  @net.elytrium.limboauth.thirdparty.com.j256.ormlite.field.DatabaseField(columnName = VK_DB_FIELD)
   private Long vkID;
 
-  @DatabaseField(columnName = TELEGRAM_DB_FIELD)
+  @net.elytrium.limboauth.thirdparty.com.j256.ormlite.field.DatabaseField(columnName = TELEGRAM_DB_FIELD)
   private Long telegramID;
 
-  @DatabaseField(columnName = DISCORD_DB_FIELD)
+  @net.elytrium.limboauth.thirdparty.com.j256.ormlite.field.DatabaseField(columnName = DISCORD_DB_FIELD)
   private Long discordID;
 
-  @DatabaseField(columnName = BLOCKED_FIELD)
+  @net.elytrium.limboauth.thirdparty.com.j256.ormlite.field.DatabaseField(columnName = BLOCKED_FIELD)
   private Boolean blocked = Settings.IMP.MAIN.DEFAULT_BLOCKED;
 
-  @DatabaseField(columnName = TOTP_ENABLED_FIELD)
+  @net.elytrium.limboauth.thirdparty.com.j256.ormlite.field.DatabaseField(columnName = TOTP_ENABLED_FIELD)
   private Boolean totpEnabled = Settings.IMP.MAIN.DEFAULT_TOTP_ENABLED;
 
-  @DatabaseField(columnName = NOTIFY_ENABLED_FIELD)
+  @net.elytrium.limboauth.thirdparty.com.j256.ormlite.field.DatabaseField(columnName = NOTIFY_ENABLED_FIELD)
   private Boolean notifyEnabled = Settings.IMP.MAIN.DEFAULT_NOTIFY_ENABLED;
 
   public SocialPlayer(String lowercaseNickname) {
@@ -112,5 +113,27 @@ public class SocialPlayer {
 
   public void setNotifyEnabled(boolean notifyEnabled) {
     this.notifyEnabled = notifyEnabled;
+  }
+
+  public enum DatabaseField {
+    VK_ID(SocialPlayer::getVkID, SocialPlayer::setVkID),
+    TELEGRAM_ID(SocialPlayer::getTelegramID, SocialPlayer::setTelegramID),
+    DISCORD_ID(SocialPlayer::getDiscordID, SocialPlayer::setDiscordID);
+
+    private final Function<SocialPlayer, Long> idGetter;
+    private final BiConsumer<SocialPlayer, Long> idSetter;
+
+    DatabaseField(Function<SocialPlayer, Long> idGetter, BiConsumer<SocialPlayer, Long> idSetter) {
+      this.idGetter = idGetter;
+      this.idSetter = idSetter;
+    }
+
+    public Long getIdFor(SocialPlayer player) {
+      return this.idGetter.apply(player);
+    }
+
+    public void setIdFor(SocialPlayer player, Long id) {
+      this.idSetter.accept(player, id);
+    }
   }
 }
