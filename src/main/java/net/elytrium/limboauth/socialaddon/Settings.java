@@ -59,6 +59,9 @@ public class Settings extends YamlConfig {
     public String FORCE_UNLINK_MAIN_CMD = "forcesocialunlink";
     public List<String> FORCE_UNLINK_ALIAS_CMD = List.of("forceunlink");
 
+    @Comment("Should we allow registration with premium usernames using social-register-cmds")
+    public boolean ALLOW_PREMIUM_NAMES_REGISTRATION = false;
+
     public boolean ENABLE_NOTIFY = true;
 
     @Comment("Will the unlink button unregister all socials at once?")
@@ -213,6 +216,7 @@ public class Settings extends YamlConfig {
       public String LINK_CODE = "🔑 Enter '/addsocial {CODE}' in game to complete account linking";
       public String REGISTER_INCORRECT_NICKNAME = "There is no account with this nickname";
       public String REGISTER_TAKEN_NICKNAME = "This nickname is already taken";
+      public String REGISTER_PREMIUM_NICKNAME = "This nickname belongs to a premium player";
       @Placeholders({"{PASSWORD}"})
       public String REGISTER_SUCCESS = "✅ Account was successfully registered{NL}Your password: {PASSWORD}{NL}Use '!keyboard' to show keyboard";
 

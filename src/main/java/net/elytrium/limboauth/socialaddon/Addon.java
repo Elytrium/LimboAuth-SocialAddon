@@ -222,6 +222,11 @@ public class Addon {
             return;
           }
 
+          if (!Settings.IMP.MAIN.ALLOW_PREMIUM_NAMES_REGISTRATION && this.plugin.isPremium(lowercaseNickname)) {
+            this.socialManager.broadcastMessage(dbField, id, Settings.IMP.MAIN.STRINGS.REGISTER_PREMIUM_NICKNAME);
+            return;
+          }
+
           String newPassword = Long.toHexString(Double.doubleToLongBits(Math.random()));
 
           RegisteredPlayer player = new RegisteredPlayer(account, "", "").setPassword(newPassword);
