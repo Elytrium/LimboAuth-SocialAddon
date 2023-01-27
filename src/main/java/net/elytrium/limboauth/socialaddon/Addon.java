@@ -31,6 +31,7 @@ import com.velocitypowered.api.plugin.annotation.DataDirectory;
 import com.velocitypowered.api.proxy.Player;
 import com.velocitypowered.api.proxy.ProxyServer;
 import com.velocitypowered.api.proxy.ServerConnection;
+import com.velocitypowered.api.scheduler.ScheduledTask;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.io.File;
 import java.nio.file.Path;
@@ -43,12 +44,14 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 import net.elytrium.commons.config.Placeholders;
 import net.elytrium.commons.kyori.serialization.Serializer;
 import net.elytrium.commons.kyori.serialization.Serializers;
 import net.elytrium.commons.utils.updates.UpdatesChecker;
 import net.elytrium.limboauth.LimboAuth;
+import net.elytrium.limboauth.handler.AuthSessionHandler;
 import net.elytrium.limboauth.model.RegisteredPlayer;
 import net.elytrium.limboauth.socialaddon.command.ForceSocialUnlinkCommand;
 import net.elytrium.limboauth.socialaddon.command.ValidateLinkCommand;
@@ -103,6 +106,7 @@ public class Addon {
 
   private final Map<String, Integer> codeMap;
   private final Map<String, TempAccount> requestedReverseMap;
+  private final Map<String, CachedRegisteredUser> cachedAccountRegistrations = new ConcurrentHashMap<>();
 
   private Dao<SocialPlayer, String> dao;
   private Pattern nicknamePattern;
@@ -110,6 +114,7 @@ public class Addon {
   private SocialManager socialManager;
   private List<List<AbstractSocial.ButtonItem>> keyboard;
   private GeoIp geoIp;
+  private ScheduledTask purgeCacheTask;
 
   static {
     Objects.requireNonNull(org.apache.commons.logging.impl.LogFactoryImpl.class);
@@ -205,12 +210,25 @@ public class Addon {
             return;
           }
 
+          String userIndex = dbField + id;
+          CachedRegisteredUser cachedRegisteredUser = this.cachedAccountRegistrations.get(userIndex);
+          if (cachedRegisteredUser == null) {
+            this.cachedAccountRegistrations.put(userIndex, cachedRegisteredUser = new CachedRegisteredUser());
+          }
+
+          if (cachedRegisteredUser.getRegistrationAmount() >= Settings.IMP.MAIN.MAX_REGISTRATION_COUNT_PER_TIME) {
+            this.socialManager.broadcastMessage(dbField, id, Settings.IMP.MAIN.STRINGS.REGISTER_LIMIT);
+            return;
+          }
+
+          cachedRegisteredUser.incrementRegistrationAmount();
+
           if (this.dao.queryForEq(dbField, id).size() != 0) {
             this.socialManager.broadcastMessage(dbField, id, Settings.IMP.MAIN.STRINGS.LINK_ALREADY);
             return;
           }
 
-          String account = message.substring(desiredLength).toLowerCase(Locale.ROOT);
+          String account = message.substring(desiredLength);
           if (!this.nicknamePattern.matcher(account).matches()) {
             this.socialManager.broadcastMessage(dbField, id, Settings.IMP.MAIN.STRINGS.REGISTER_INCORRECT_NICKNAME);
             return;
@@ -230,11 +248,9 @@ public class Addon {
           String newPassword = Long.toHexString(Double.doubleToLongBits(Math.random()));
 
           RegisteredPlayer player = new RegisteredPlayer(account, "", "").setPassword(newPassword);
-
           this.plugin.getPlayerDao().create(player);
 
           this.linkSocial(lowercaseNickname, dbField, id);
-
           this.socialManager.broadcastMessage(dbField, id,
               Placeholders.replace(Settings.IMP.MAIN.STRINGS.REGISTER_SUCCESS, newPassword));
         }
@@ -249,21 +265,43 @@ public class Addon {
             return;
           }
 
+          String[] args = message.substring(desiredLength).split(" ");
           if (this.dao.queryForEq(dbField, id).size() != 0) {
             this.socialManager.broadcastMessage(dbField, id, Settings.IMP.MAIN.STRINGS.LINK_ALREADY);
             return;
           }
 
-          String account = message.substring(desiredLength).toLowerCase(Locale.ROOT);
+          String account = args[0].toLowerCase(Locale.ROOT);
           if (!this.nicknamePattern.matcher(account).matches()) {
             this.socialManager.broadcastMessage(dbField, id, Settings.IMP.MAIN.STRINGS.LINK_UNKNOWN_ACCOUNT);
             return;
           }
 
-          int code = ThreadLocalRandom.current().nextInt(Settings.IMP.MAIN.CODE_LOWER_BOUND, Settings.IMP.MAIN.CODE_UPPER_BOUND);
-          this.codeMap.put(account, code);
-          this.requestedReverseMap.put(account, new TempAccount(dbField, id));
-          this.socialManager.broadcastMessage(dbField, id, Placeholders.replace(Settings.IMP.MAIN.STRINGS.LINK_CODE, String.valueOf(code)));
+          if (args.length == 1) {
+            if (Settings.IMP.MAIN.DISABLE_LINK_WITHOUT_PASSWORD) {
+              this.socialManager.broadcastMessage(dbField, id, Settings.IMP.MAIN.STRINGS.LINK_SOCIAL_CMD_USAGE);
+              return;
+            }
+
+            int code = ThreadLocalRandom.current().nextInt(Settings.IMP.MAIN.CODE_LOWER_BOUND, Settings.IMP.MAIN.CODE_UPPER_BOUND);
+            this.codeMap.put(account, code);
+            this.requestedReverseMap.put(account, new TempAccount(dbField, id));
+            this.socialManager.broadcastMessage(dbField, id, Placeholders.replace(Settings.IMP.MAIN.STRINGS.LINK_CODE, String.valueOf(code)));
+          } else {
+            if (Settings.IMP.MAIN.DISABLE_LINK_WITH_PASSWORD) {
+              this.socialManager.broadcastMessage(dbField, id, Settings.IMP.MAIN.STRINGS.LINK_SOCIAL_CMD_USAGE);
+              return;
+            }
+
+            RegisteredPlayer registeredPlayer = this.plugin.getPlayerDao().queryForId(account);
+            if (AuthSessionHandler.checkPassword(args[1], registeredPlayer, this.plugin.getPlayerDao())) {
+              this.linkSocial(account, dbField, id);
+              this.socialManager.broadcastMessage(dbField, id, Settings.IMP.MAIN.STRINGS.LINK_SUCCESS);
+            } else {
+              this.socialManager.broadcastMessage(dbField, id, Settings.IMP.MAIN.STRINGS.LINK_WRONG_PASSWORD);
+              return;
+            }
+          }
 
           return;
         }
@@ -533,6 +571,16 @@ public class Addon {
     ));
     this.server.getEventManager().register(this, new ReloadListener(this));
 
+    if (this.purgeCacheTask != null) {
+      this.purgeCacheTask.cancel();
+    }
+
+    this.purgeCacheTask = this.server.getScheduler()
+        .buildTask(this, () -> this.checkCache(this.cachedAccountRegistrations, Settings.IMP.MAIN.PURGE_REGISTRATION_CACHE_MILLIS))
+        .delay(net.elytrium.limboauth.Settings.IMP.MAIN.PURGE_CACHE_MILLIS, TimeUnit.MILLISECONDS)
+        .repeat(net.elytrium.limboauth.Settings.IMP.MAIN.PURGE_CACHE_MILLIS, TimeUnit.MILLISECONDS)
+        .schedule();
+
     CommandManager commandManager = this.server.getCommandManager();
     commandManager.unregister(Settings.IMP.MAIN.LINKAGE_MAIN_CMD);
     commandManager.unregister(Settings.IMP.MAIN.FORCE_UNLINK_MAIN_CMD);
@@ -547,6 +595,13 @@ public class Addon {
         new ForceSocialUnlinkCommand(this),
         Settings.IMP.MAIN.FORCE_UNLINK_ALIAS_CMD.toArray(new String[0])
     );
+  }
+
+  private void checkCache(Map<?, ? extends CachedUser> userMap, long time) {
+    userMap.entrySet().stream()
+        .filter(userEntry -> userEntry.getValue().getCheckTime() + time <= System.currentTimeMillis())
+        .map(Map.Entry::getKey)
+        .forEach(userMap::remove);
   }
 
   public void unregisterPlayer(String nickname) {
@@ -622,6 +677,28 @@ public class Addon {
       return this.id;
     }
 
+  }
+
+  private static class CachedUser {
+
+    private final long checkTime = System.currentTimeMillis();
+
+    public long getCheckTime() {
+      return this.checkTime;
+    }
+  }
+
+  private static class CachedRegisteredUser extends CachedUser {
+
+    private int registrationAmount;
+
+    public int getRegistrationAmount() {
+      return this.registrationAmount;
+    }
+
+    public void incrementRegistrationAmount() {
+      this.registrationAmount++;
+    }
   }
 
   private static void setSerializer(Serializer serializer) {

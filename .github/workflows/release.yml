@@ -1,12 +1,8 @@
 name: Java CI with Gradle
 
 on:
-  push:
-    branches:
-      - master
-  pull_request:
-    branches:
-      - master
+  release:
+    types: [published]
 
 jobs:
   build:
@@ -26,43 +22,31 @@ jobs:
         with:
           name: LimboAuth Social Addon
           path: "build/libs/LimboAuth*.jar"
-      - uses: dev-drprasad/delete-tag-and-release@v0.2.0
-        if: ${{ github.event_name == 'push' }}
-        with:
-          delete_release: true
-          tag_name: dev-build
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - name: Find git version
-        id: git-version
-        run: echo "id=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
       - name: Find correct JAR
-        if: ${{ github.event_name == 'push' }}
         id: find-jar
         run: |
           output="$(find build/libs/ ! -name "*-javadoc.jar" ! -name "*-sources.jar" -type f -printf "%f\n")"
           echo "::set-output name=jarname::$output"
-      - name: Release the build
-        if: ${{ github.event_name == 'push' }}
-        uses: ncipollo/release-action@v1
+      - name: Upload to the GitHub release
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          artifacts: build/libs/${{ steps.find-jar.outputs.jarname }}
-          body: ${{ join(github.event.commits.*.message, '\n') }}
-          prerelease: true
-          name: Dev-build ${{ steps.git-version.outputs.id }}
-          tag: dev-build
+          upload_url: ${{ github.event.release.upload_url }}
+          asset_path: build/libs/${{ steps.find-jar.outputs.jarname }}
+          asset_name: ${{ steps.find-jar.outputs.jarname }}
+          asset_content_type: application/java-archive
       - name: Upload to Modrinth
-        if: ${{ github.event_name == 'push' }}
         uses: RubixDev/modrinth-upload@v1.0.0
         with:
           token: ${{ secrets.MODRINTH_TOKEN }}
           file_path: build/libs/${{ steps.find-jar.outputs.jarname }}
-          name: Dev-build ${{ steps.git-version.outputs.id }}
-          version: ${{ steps.git-version.outputs.id }}
-          changelog: ${{ join(github.event.commits.*.message, '\n') }}
+          name: Release ${{ github.event.release.tag_name }}
+          version: ${{ github.event.release.tag_name }}
+          changelog: ${{ github.event.release.body }}
           relations: 4iChqdl8:required
           game_versions: 1.7.2
-          release_type: beta
+          release_type: release
           loaders: velocity
           featured: false
           project_id: fPyQl4rd

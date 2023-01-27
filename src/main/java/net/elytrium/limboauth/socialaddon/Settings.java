@@ -70,6 +70,11 @@ public class Settings extends YamlConfig {
     @Comment("Disable unlinking?")
     public boolean DISABLE_UNLINK = false;
 
+    @Comment("Disable commands like !account link <username>")
+    public boolean DISABLE_LINK_WITHOUT_PASSWORD = false;
+    @Comment("Disable commands like !account link <username> <password>")
+    public boolean DISABLE_LINK_WITH_PASSWORD = true;
+
     @Comment("Default buttons state")
     public boolean DEFAULT_BLOCKED = false;
     public boolean DEFAULT_TOTP_ENABLED = false;
@@ -100,6 +105,12 @@ public class Settings extends YamlConfig {
         "true - players with social 2FA enabled can login without the password"
     })
     public boolean AUTH_2FA_WITHOUT_PASSWORD = false;
+
+    @Comment("How long in milliseconds the player should wait before registering new account")
+    public long PURGE_REGISTRATION_CACHE_MILLIS = 86400000;
+
+    @Comment("How many accounts can register the player per time (per purge-registration-cache-millis)")
+    public int MAX_REGISTRATION_COUNT_PER_TIME = 3;
 
     @Create
     public MAIN.VK VK;
@@ -214,9 +225,11 @@ public class Settings extends YamlConfig {
       public String LINK_UNKNOWN_ACCOUNT = "There is no account with this nickname";
       @Placeholders({"{CODE}"})
       public String LINK_CODE = "🔑 Enter '/addsocial {CODE}' in game to complete account linking";
+      public String LINK_WRONG_PASSWORD = "Wrong password";
       public String REGISTER_INCORRECT_NICKNAME = "There is no account with this nickname";
       public String REGISTER_TAKEN_NICKNAME = "This nickname is already taken";
       public String REGISTER_PREMIUM_NICKNAME = "This nickname belongs to a premium player";
+      public String REGISTER_LIMIT = "You've tried to registered numerous times!";
       @Placeholders({"{PASSWORD}"})
       public String REGISTER_SUCCESS = "✅ Account was successfully registered{NL}Your password: {PASSWORD}{NL}Use '!keyboard' to show keyboard";
 
