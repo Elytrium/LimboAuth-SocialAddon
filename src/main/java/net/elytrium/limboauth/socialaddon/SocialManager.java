@@ -31,6 +31,7 @@ public class SocialManager {
   private final LinkedList<AbstractSocial> socialList;
   private final LinkedList<SocialMessageListenerAdapter> messageEvents = new LinkedList<>();
   private final HashMap<String, SocialButtonListenerAdapter> buttonEvents = new HashMap<>();
+  private final HashMap<String, String> buttonIdMap = new HashMap<>();
 
   public SocialManager(AbstractSocial.Constructor... socialList) {
     this.socialList = new LinkedList<>();
@@ -47,6 +48,11 @@ public class SocialManager {
   }
 
   private void onMessageReceived(String dbField, Long id, String message) {
+    String buttonId = this.buttonIdMap.get(message);
+    if (buttonId != null) {
+      this.onButtonClicked(dbField, id, buttonId);
+    }
+
     this.messageEvents.forEach(event -> {
       try {
         event.accept(dbField, id, message);
@@ -60,9 +66,10 @@ public class SocialManager {
   }
 
   private void onButtonClicked(String dbField, Long id, String buttonId) {
-    if (this.buttonEvents.containsKey(buttonId)) {
+    SocialButtonListenerAdapter buttonListenerAdapter = this.buttonEvents.get(buttonId);
+    if (buttonListenerAdapter != null) {
       try {
-        this.buttonEvents.get(buttonId).accept(dbField, id);
+        buttonListenerAdapter.accept(dbField, id);
       } catch (Exception e) {
         this.broadcastMessage(dbField, id, Settings.IMP.MAIN.STRINGS.SOCIAL_EXCEPTION_CAUGHT);
         if (Settings.IMP.MAIN.DEBUG) {
@@ -117,12 +124,24 @@ public class SocialManager {
         .forEach(e -> e.onPlayerAdded(id));
   }
 
+  public void registerKeyboard(List<List<AbstractSocial.ButtonItem>> keyboard) {
+    for (List<AbstractSocial.ButtonItem> items : keyboard) {
+      for (AbstractSocial.ButtonItem item : items) {
+        this.buttonIdMap.put(item.getValue(), item.getId());
+      }
+    }
+  }
+
+  public void registerButton(AbstractSocial.ButtonItem item) {
+    this.buttonIdMap.put(item.getValue(), item.getId());
+  }
+
   public void broadcastMessage(SocialPlayer player, String message, List<List<AbstractSocial.ButtonItem>> item) {
     this.broadcastMessage(player, message, item, AbstractSocial.ButtonVisibility.DEFAULT);
   }
 
   public void broadcastMessage(SocialPlayer player, String message,
-      List<List<AbstractSocial.ButtonItem>> item, AbstractSocial.ButtonVisibility visibility) {
+                               List<List<AbstractSocial.ButtonItem>> item, AbstractSocial.ButtonVisibility visibility) {
     this.socialList.stream()
         .filter(e -> e.canSend(player))
         .forEach(e -> e.sendMessage(player, message, item, visibility));
@@ -140,7 +159,7 @@ public class SocialManager {
 
 
   public void broadcastMessage(String dbField, Long id, String message,
-      List<List<AbstractSocial.ButtonItem>> item, AbstractSocial.ButtonVisibility visibility) {
+                               List<List<AbstractSocial.ButtonItem>> item, AbstractSocial.ButtonVisibility visibility) {
     this.socialList.stream()
         .filter(e -> e.getDbField().equals(dbField))
         .forEach(e -> e.sendMessage(id, message, item, visibility));

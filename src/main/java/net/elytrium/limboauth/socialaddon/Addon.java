@@ -194,6 +194,8 @@ public class Addon {
         )
     );
 
+    this.socialManager.registerKeyboard(this.keyboard);
+
     this.socialManager.addMessageEvent((dbField, id, message) -> {
       String lowercaseMessage = message.toLowerCase(Locale.ROOT);
       if (Settings.IMP.MAIN.START_MESSAGES.contains(lowercaseMessage)) {

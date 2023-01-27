@@ -91,6 +91,7 @@ public class LimboAuthListener {
       );
     }
 
+    this.socialManager.registerKeyboard(this.yesNoButtons);
     this.socialManager.removeButtonEvent(ASK_NO_BTN);
     this.socialManager.removeButtonEvent(ASK_YES_BTN);
 

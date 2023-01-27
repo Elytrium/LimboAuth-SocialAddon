@@ -29,7 +29,10 @@ import org.telegram.telegrambots.meta.api.objects.Message;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.ReplyKeyboard;
+import org.telegram.telegrambots.meta.api.objects.replykeyboard.ReplyKeyboardMarkup;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
+import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.KeyboardButton;
+import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.KeyboardRow;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiRequestException;
 import org.telegram.telegrambots.meta.generics.BotSession;
@@ -90,14 +93,27 @@ public class TelegramSocial extends AbstractSocial {
 
   @Override
   public void sendMessage(Long id, String content, List<List<ButtonItem>> buttons, ButtonVisibility visibility) {
-    ReplyKeyboard keyboard = new InlineKeyboardMarkup(buttons.stream().map(row -> row.stream().map(e -> {
+    ReplyKeyboard keyboard;
+    switch (visibility) {
+      case PREFER_INLINE: {
+        keyboard = new InlineKeyboardMarkup(buttons.stream().map(row -> row.stream().map(e -> {
+          InlineKeyboardButton button = new InlineKeyboardButton();
+          button.setText(e.getValue());
+          button.setCallbackData(e.getId());
 
-      InlineKeyboardButton button = new InlineKeyboardButton();
-      button.setText(e.getValue());
-      button.setCallbackData(e.getId());
-
-      return button;
-    }).collect(Collectors.toList())).collect(Collectors.toList()));
+          return button;
+        }).collect(Collectors.toList())).collect(Collectors.toList()));
+        break;
+      }
+      default:
+      case PREFER_KEYBOARD: {
+        keyboard = new ReplyKeyboardMarkup(buttons.stream().map(row ->
+            new KeyboardRow(row.stream().map(e ->
+                new KeyboardButton(e.getValue())).collect(Collectors.toList())))
+            .collect(Collectors.toList()));
+        break;
+      }
+    }
 
     this.bot.sendMessage(id, content, keyboard);
   }
