@@ -226,7 +226,7 @@ public class Settings extends YamlConfig {
       @Placeholders({"{CODE}"})
       public String LINK_CODE = "🔑 Enter '/addsocial {CODE}' in game to complete account linking";
       public String LINK_WRONG_PASSWORD = "Wrong password";
-      public String REGISTER_INCORRECT_NICKNAME = "Nickname contains forbidden characters.";
+      public String REGISTER_INCORRECT_NICKNAME = "Nickname contains forbidden characters";
       public String REGISTER_TAKEN_NICKNAME = "This nickname is already taken";
       public String REGISTER_PREMIUM_NICKNAME = "This nickname belongs to a premium player";
       public String REGISTER_LIMIT = "You've tried to registered numerous times!";
