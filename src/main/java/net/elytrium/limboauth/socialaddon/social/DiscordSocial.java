@@ -22,7 +22,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
-import javax.security.auth.login.LoginException;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
 import net.dv8tion.jda.api.entities.Activity;
@@ -60,12 +59,12 @@ public class DiscordSocial extends AbstractSocial {
         jdaBuilder = JDABuilder.create(Settings.IMP.MAIN.DISCORD.TOKEN, GatewayIntent.DIRECT_MESSAGES);
       }
 
-      this.jda = jdaBuilder.disableCache(CacheFlag.ACTIVITY, CacheFlag.VOICE_STATE, CacheFlag.EMOTE, CacheFlag.CLIENT_STATUS, CacheFlag.ONLINE_STATUS)
+      this.jda = jdaBuilder.disableCache(CacheFlag.ACTIVITY, CacheFlag.VOICE_STATE, CacheFlag.EMOJI, CacheFlag.CLIENT_STATUS, CacheFlag.ONLINE_STATUS)
           .setActivity(Settings.IMP.MAIN.DISCORD.ACTIVITY_ENABLED
               ? Activity.of(Settings.IMP.MAIN.DISCORD.ACTIVITY_TYPE, Settings.IMP.MAIN.DISCORD.ACTIVITY_NAME, Settings.IMP.MAIN.DISCORD.ACTIVITY_URL)
               : null)
           .build().awaitReady();
-    } catch (LoginException | InterruptedException e) {
+    } catch (InterruptedException e) {
       throw new SocialInitializationException(e);
     }
 
@@ -145,7 +144,7 @@ public class DiscordSocial extends AbstractSocial {
         .submit()
         .thenAccept(privateChannel -> privateChannel
             .sendMessage(content)
-            .setActionRows(actionRowList)
+            .setComponents(actionRowList)
             .submit()
             .exceptionally(e -> {
               if (Settings.IMP.MAIN.DEBUG) {
@@ -249,8 +248,8 @@ public class DiscordSocial extends AbstractSocial {
   }
 
   private enum RoleActionType {
-    ADDROLE((role, id) -> role.getGuild().addRoleToMember(id, role).queue()),
-    REMROLE((role, id) -> role.getGuild().removeRoleFromMember(id, role).queue());
+    ADDROLE((role, id) -> role.getGuild().addRoleToMember(User.fromId(id), role).queue()),
+    REMROLE((role, id) -> role.getGuild().removeRoleFromMember(User.fromId(id), role).queue());
 
     private final BiConsumer<Role, Long> doAction;
 

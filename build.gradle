@@ -3,13 +3,13 @@
 plugins {
     id("java")
     id("checkstyle")
-    id("com.github.spotbugs").version("5.0.5")
+    id("com.github.spotbugs").version("5.0.13")
     id("org.cadixdev.licenser").version("0.6.1")
     id("com.github.johnrengelman.shadow").version("7.1.2")
 }
 
 setGroup("net.elytrium")
-setVersion("1.0.10")
+setVersion("1.0.11")
 
 compileJava {
     getOptions().setEncoding("UTF-8")
