@@ -61,19 +61,16 @@ public class LimboAuthListener {
   private final SocialManager socialManager;
 
   private final List<List<AbstractSocial.ButtonItem>> yesNoButtons;
-  private final List<List<AbstractSocial.ButtonItem>> keyboard;
   private final Map<String, AuthSession> sessions = new ConcurrentHashMap<>();
 
   private final GeoIp geoIp;
   private final boolean auth2faWithoutPassword = Settings.IMP.MAIN.AUTH_2FA_WITHOUT_PASSWORD;
 
-  public LimboAuthListener(Addon addon, LimboAuth plugin, Dao<SocialPlayer, String> socialPlayerDao, SocialManager socialManager,
-                           List<List<AbstractSocial.ButtonItem>> keyboard, GeoIp geoIp) {
+  public LimboAuthListener(Addon addon, LimboAuth plugin, Dao<SocialPlayer, String> socialPlayerDao, SocialManager socialManager, GeoIp geoIp) {
     this.addon = addon;
     this.plugin = plugin;
     this.socialPlayerDao = socialPlayerDao;
     this.socialManager = socialManager;
-    this.keyboard = keyboard;
     this.geoIp = geoIp;
     if (Settings.IMP.MAIN.REVERSE_YES_NO_BUTTONS) {
       this.yesNoButtons = List.of(
@@ -100,7 +97,7 @@ public class LimboAuthListener {
 
       if (player != null && this.sessions.containsKey(player.getLowercaseNickname())) {
         this.sessions.get(player.getLowercaseNickname()).getEvent().completeAndCancel(this.askedKick);
-        this.socialManager.broadcastMessage(player, Settings.IMP.MAIN.STRINGS.NOTIFY_WARN, this.keyboard);
+        this.socialManager.broadcastMessage(player, Settings.IMP.MAIN.STRINGS.NOTIFY_WARN, this.addon.getKeyboard(player));
       }
     });
 
@@ -119,7 +116,7 @@ public class LimboAuthListener {
           authSession.getEvent().complete(TaskEvent.Result.NORMAL);
         }
 
-        this.socialManager.broadcastMessage(player, Settings.IMP.MAIN.STRINGS.NOTIFY_THANKS, this.keyboard);
+        this.socialManager.broadcastMessage(player, Settings.IMP.MAIN.STRINGS.NOTIFY_THANKS, this.addon.getKeyboard(player));
       }
     });
 
@@ -191,7 +188,7 @@ public class LimboAuthListener {
       String ip = event.getPlayer().getRemoteAddress().getAddress().getHostAddress();
       this.socialManager.broadcastMessage(player, Placeholders.replace(Settings.IMP.MAIN.STRINGS.NOTIFY_JOIN,
           ip,
-          Optional.ofNullable(this.geoIp).map(nonNullGeo -> nonNullGeo.getLocation(ip)).orElse("")), this.keyboard);
+          Optional.ofNullable(this.geoIp).map(nonNullGeo -> nonNullGeo.getLocation(ip)).orElse("")), this.addon.getKeyboard(player));
     }
   }
 
@@ -204,7 +201,7 @@ public class LimboAuthListener {
     SocialPlayer player = this.queryPlayer(event.getPlayer());
     if (player != null) {
       if (Settings.IMP.MAIN.ENABLE_NOTIFY && player.isNotifyEnabled()) {
-        this.socialManager.broadcastMessage(player, Settings.IMP.MAIN.STRINGS.NOTIFY_LEAVE, this.keyboard);
+        this.socialManager.broadcastMessage(player, Settings.IMP.MAIN.STRINGS.NOTIFY_LEAVE, this.addon.getKeyboard(player));
       }
 
       this.sessions.remove(player.getLowercaseNickname());

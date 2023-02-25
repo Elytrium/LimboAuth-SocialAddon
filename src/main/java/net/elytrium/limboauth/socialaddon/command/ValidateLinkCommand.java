@@ -26,6 +26,7 @@ import java.util.Locale;
 import net.elytrium.commons.config.Placeholders;
 import net.elytrium.limboauth.socialaddon.Addon;
 import net.elytrium.limboauth.socialaddon.Settings;
+import net.elytrium.limboauth.socialaddon.model.SocialPlayer;
 
 public class ValidateLinkCommand implements SimpleCommand {
 
@@ -52,11 +53,17 @@ public class ValidateLinkCommand implements SimpleCommand {
           if (validCode != null) {
             if (validCode == Integer.parseInt(args[0])) {
               Addon.TempAccount tempAccount = this.addon.getTempAccount(username);
-              this.addon.linkSocial(username, tempAccount.getDbField(), tempAccount.getId());
-              this.addon.getSocialManager().registerHook(tempAccount.getDbField(), tempAccount.getId());
-              this.addon.getSocialManager()
-                  .broadcastMessage(tempAccount.getDbField(), tempAccount.getId(), Settings.IMP.MAIN.STRINGS.LINK_SUCCESS, this.addon.getKeyboard());
-              player.sendMessage(Addon.getSerializer().deserialize(Settings.IMP.MAIN.STRINGS.LINK_SUCCESS_GAME));
+              SocialPlayer socialPlayer = this.addon.linkSocial(username, tempAccount.getDbField(), tempAccount.getId());
+              if (socialPlayer == null) {
+                player.sendMessage(Addon.getSerializer().deserialize(Settings.IMP.MAIN.STRINGS.LINK_ALREADY_GAME));
+                return;
+              } else {
+                this.addon.getSocialManager().registerHook(tempAccount.getDbField(), tempAccount.getId());
+                this.addon.getSocialManager()
+                    .broadcastMessage(tempAccount.getDbField(), tempAccount.getId(), Settings.IMP.MAIN.STRINGS.LINK_SUCCESS,
+                        this.addon.getKeyboard(socialPlayer));
+                player.sendMessage(Addon.getSerializer().deserialize(Settings.IMP.MAIN.STRINGS.LINK_SUCCESS_GAME));
+              }
             } else {
               source.sendMessage(Addon.getSerializer()
                   .deserialize(Placeholders.replace(Settings.IMP.MAIN.STRINGS.LINK_WRONG_CODE, player.getUsername())));

@@ -46,6 +46,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import net.elytrium.commons.config.Placeholders;
 import net.elytrium.commons.kyori.serialization.Serializer;
 import net.elytrium.commons.kyori.serialization.Serializers;
@@ -87,13 +88,6 @@ import org.slf4j.Logger;
 )
 public class Addon {
 
-  private static final String INFO_BTN = "info";
-  private static final String BLOCK_BTN = "block";
-  private static final String TOTP_BTN = "2fa";
-  private static final String NOTIFY_BTN = "notify";
-  private static final String KICK_BTN = "kick";
-  private static final String RESTORE_BTN = "restore";
-  private static final String UNLINK_BTN = "unlink";
   private static final String PLUGIN_MINIMUM_VERSION = "1.1.0";
 
   private static Serializer SERIALIZER;
@@ -112,7 +106,6 @@ public class Addon {
   private Pattern nicknamePattern;
 
   private SocialManager socialManager;
-  private List<List<AbstractSocial.ButtonItem>> keyboard;
   private GeoIp geoIp;
   private ScheduledTask purgeCacheTask;
 
@@ -176,25 +169,9 @@ public class Addon {
     this.socialManager = new SocialManager(DiscordSocial::new, TelegramSocial::new, VKSocial::new);
     this.socialManager.start();
 
-    this.keyboard = List.of(
-        List.of(
-            new AbstractSocial.ButtonItem(INFO_BTN, Settings.IMP.MAIN.STRINGS.INFO_BTN, AbstractSocial.ButtonItem.Color.PRIMARY)
-        ),
-        List.of(
-            new AbstractSocial.ButtonItem(BLOCK_BTN, Settings.IMP.MAIN.STRINGS.BLOCK_TOGGLE_BTN, AbstractSocial.ButtonItem.Color.SECONDARY),
-            new AbstractSocial.ButtonItem(TOTP_BTN, Settings.IMP.MAIN.STRINGS.TOGGLE_2FA_BTN, AbstractSocial.ButtonItem.Color.SECONDARY)
-        ),
-        List.of(
-            new AbstractSocial.ButtonItem(NOTIFY_BTN, Settings.IMP.MAIN.STRINGS.TOGGLE_NOTIFICATION_BTN, AbstractSocial.ButtonItem.Color.SECONDARY)
-        ),
-        List.of(
-            new AbstractSocial.ButtonItem(KICK_BTN, Settings.IMP.MAIN.STRINGS.KICK_BTN, AbstractSocial.ButtonItem.Color.RED),
-            new AbstractSocial.ButtonItem(RESTORE_BTN, Settings.IMP.MAIN.STRINGS.RESTORE_BTN, AbstractSocial.ButtonItem.Color.RED),
-            new AbstractSocial.ButtonItem(UNLINK_BTN, Settings.IMP.MAIN.STRINGS.UNLINK_BTN, AbstractSocial.ButtonItem.Color.RED)
-        )
-    );
-
-    this.socialManager.registerKeyboard(this.keyboard);
+    for (PanelButton value : PanelButton.values()) {
+      this.socialManager.registerButton(value.getId(), value.getText());
+    }
 
     this.socialManager.addMessageEvent((dbField, id, message) -> {
       String lowercaseMessage = message.toLowerCase(Locale.ROOT);
@@ -311,20 +288,21 @@ public class Addon {
 
       for (String forceKeyboardCmd : Settings.IMP.MAIN.FORCE_KEYBOARD_CMDS) {
         if (lowercaseMessage.startsWith(forceKeyboardCmd)) {
-          if (this.dao.queryBuilder().where().eq(dbField, id).countOf() == 0) {
+          List<SocialPlayer> socialPlayerList = this.dao.queryForEq(dbField, id);
+          if (socialPlayerList.size() == 0) {
             this.socialManager.broadcastMessage(dbField, id, Settings.IMP.MAIN.START_REPLY);
             return;
           }
 
-          this.socialManager.broadcastMessage(dbField, id, Settings.IMP.MAIN.STRINGS.KEYBOARD_RESTORED, this.keyboard);
+          SocialPlayer player = socialPlayerList.get(0);
+          this.socialManager.broadcastMessage(dbField, id, Settings.IMP.MAIN.STRINGS.KEYBOARD_RESTORED, this.getKeyboard(player));
           return;
         }
       }
     });
 
-    this.socialManager.addButtonEvent(INFO_BTN, (dbField, id) -> {
+    this.socialManager.addButtonEvent(PanelButton.INFO_BTN.getId(), (dbField, id) -> {
       List<SocialPlayer> socialPlayerList = this.dao.queryForEq(dbField, id);
-
       if (socialPlayerList.size() == 0) {
         return;
       }
@@ -361,11 +339,10 @@ public class Addon {
               player.isNotifyEnabled() ? Settings.IMP.MAIN.STRINGS.NOTIFY_ENABLED : Settings.IMP.MAIN.STRINGS.NOTIFY_DISABLED,
               player.isBlocked() ? Settings.IMP.MAIN.STRINGS.BLOCK_ENABLED : Settings.IMP.MAIN.STRINGS.BLOCK_DISABLED,
               player.isTotpEnabled() ? Settings.IMP.MAIN.STRINGS.TOTP_ENABLED : Settings.IMP.MAIN.STRINGS.TOTP_DISABLED),
-          this.keyboard
-      );
+          this.getKeyboard(player));
     });
 
-    this.socialManager.addButtonEvent(BLOCK_BTN, (dbField, id) -> {
+    this.socialManager.addButtonEvent(PanelButton.BLOCK_BTN.getId(), (dbField, id) -> {
       List<SocialPlayer> socialPlayerList = this.dao.queryForEq(dbField, id);
 
       if (socialPlayerList.size() == 0) {
@@ -377,8 +354,7 @@ public class Addon {
       if (player.isBlocked()) {
         player.setBlocked(false);
         this.socialManager.broadcastMessage(dbField, id,
-            Placeholders.replace(Settings.IMP.MAIN.STRINGS.UNBLOCK_SUCCESS, player.getLowercaseNickname()), this.keyboard
-        );
+            Placeholders.replace(Settings.IMP.MAIN.STRINGS.UNBLOCK_SUCCESS, player.getLowercaseNickname()), this.getKeyboard(player));
       } else {
         player.setBlocked(true);
 
@@ -388,14 +364,13 @@ public class Addon {
             .ifPresent(e -> e.disconnect(Addon.getSerializer().deserialize(Settings.IMP.MAIN.STRINGS.KICK_GAME_MESSAGE)));
 
         this.socialManager.broadcastMessage(dbField, id,
-            Placeholders.replace(Settings.IMP.MAIN.STRINGS.BLOCK_SUCCESS, player.getLowercaseNickname()), this.keyboard
-        );
+            Placeholders.replace(Settings.IMP.MAIN.STRINGS.BLOCK_SUCCESS, player.getLowercaseNickname()), this.getKeyboard(player));
       }
 
       this.dao.update(player);
     });
 
-    this.socialManager.addButtonEvent(TOTP_BTN, (dbField, id) -> {
+    this.socialManager.addButtonEvent(PanelButton.TOTP_BTN.getId(), (dbField, id) -> {
       List<SocialPlayer> socialPlayerList = this.dao.queryForEq(dbField, id);
 
       if (socialPlayerList.size() == 0) {
@@ -407,19 +382,17 @@ public class Addon {
       if (player.isTotpEnabled()) {
         player.setTotpEnabled(false);
         this.socialManager.broadcastMessage(dbField, id,
-            Placeholders.replace(Settings.IMP.MAIN.STRINGS.TOTP_DISABLE_SUCCESS, player.getLowercaseNickname()), this.keyboard
-        );
+            Placeholders.replace(Settings.IMP.MAIN.STRINGS.TOTP_DISABLE_SUCCESS, player.getLowercaseNickname()), this.getKeyboard(player));
       } else {
         player.setTotpEnabled(true);
         this.socialManager.broadcastMessage(dbField, id,
-            Placeholders.replace(Settings.IMP.MAIN.STRINGS.TOTP_ENABLE_SUCCESS, player.getLowercaseNickname()), this.keyboard
-        );
+            Placeholders.replace(Settings.IMP.MAIN.STRINGS.TOTP_ENABLE_SUCCESS, player.getLowercaseNickname()), this.getKeyboard(player));
       }
 
       this.dao.update(player);
     });
 
-    this.socialManager.addButtonEvent(NOTIFY_BTN, (dbField, id) -> {
+    this.socialManager.addButtonEvent(PanelButton.NOTIFY_BTN.getId(), (dbField, id) -> {
       List<SocialPlayer> socialPlayerList = this.dao.queryForEq(dbField, id);
 
       if (socialPlayerList.size() == 0) {
@@ -431,21 +404,18 @@ public class Addon {
       if (player.isNotifyEnabled()) {
         player.setNotifyEnabled(false);
         this.socialManager.broadcastMessage(dbField, id,
-            Placeholders.replace(Settings.IMP.MAIN.STRINGS.NOTIFY_DISABLE_SUCCESS, player.getLowercaseNickname()), this.keyboard
-        );
+            Placeholders.replace(Settings.IMP.MAIN.STRINGS.NOTIFY_DISABLE_SUCCESS, player.getLowercaseNickname()), this.getKeyboard(player));
       } else {
         player.setNotifyEnabled(true);
         this.socialManager.broadcastMessage(dbField, id,
-            Placeholders.replace(Settings.IMP.MAIN.STRINGS.NOTIFY_ENABLE_SUCCESS, player.getLowercaseNickname()), this.keyboard
-        );
+            Placeholders.replace(Settings.IMP.MAIN.STRINGS.NOTIFY_ENABLE_SUCCESS, player.getLowercaseNickname()), this.getKeyboard(player));
       }
 
       this.dao.update(player);
     });
 
-    this.socialManager.addButtonEvent(KICK_BTN, (dbField, id) -> {
+    this.socialManager.addButtonEvent(PanelButton.KICK_BTN.getId(), (dbField, id) -> {
       List<SocialPlayer> socialPlayerList = this.dao.queryForEq(dbField, id);
-
       if (socialPlayerList.size() == 0) {
         return;
       }
@@ -457,18 +427,16 @@ public class Addon {
       if (proxyPlayer.isPresent()) {
         proxyPlayer.get().disconnect(Addon.getSerializer().deserialize(Settings.IMP.MAIN.STRINGS.KICK_GAME_MESSAGE));
         this.socialManager.broadcastMessage(dbField, id,
-            Placeholders.replace(Settings.IMP.MAIN.STRINGS.KICK_SUCCESS, player.getLowercaseNickname()), this.keyboard
-        );
+            Placeholders.replace(Settings.IMP.MAIN.STRINGS.KICK_SUCCESS, player.getLowercaseNickname()), this.getKeyboard(player));
       } else {
         this.socialManager.broadcastMessage(dbField, id,
-            Settings.IMP.MAIN.STRINGS.KICK_IS_OFFLINE.replace("{NICKNAME}", player.getLowercaseNickname()), this.keyboard
-        );
+            Settings.IMP.MAIN.STRINGS.KICK_IS_OFFLINE.replace("{NICKNAME}", player.getLowercaseNickname()), this.getKeyboard(player));
       }
 
       this.dao.update(player);
     });
 
-    this.socialManager.addButtonEvent(RESTORE_BTN, (dbField, id) -> {
+    this.socialManager.addButtonEvent(PanelButton.RESTORE_BTN.getId(), (dbField, id) -> {
       List<SocialPlayer> socialPlayerList = this.dao.queryForEq(dbField, id);
 
       if (socialPlayerList.size() == 0) {
@@ -480,9 +448,7 @@ public class Addon {
       if (Settings.IMP.MAIN.PROHIBIT_PREMIUM_RESTORE
           && this.plugin.isPremiumInternal(player.getLowercaseNickname()).getState() != LimboAuth.PremiumState.CRACKED) {
         this.socialManager.broadcastMessage(dbField, id,
-            Placeholders.replace(Settings.IMP.MAIN.STRINGS.RESTORE_MSG_PREMIUM, player.getLowercaseNickname()),
-            this.keyboard
-        );
+            Placeholders.replace(Settings.IMP.MAIN.STRINGS.RESTORE_MSG_PREMIUM, player.getLowercaseNickname()), this.getKeyboard(player));
         return;
       }
 
@@ -497,24 +463,20 @@ public class Addon {
 
       if (updated) {
         this.socialManager.broadcastMessage(dbField, id,
-            Placeholders.replace(Settings.IMP.MAIN.STRINGS.RESTORE_MSG, player.getLowercaseNickname(), newPassword),
-            this.keyboard
-        );
+            Placeholders.replace(Settings.IMP.MAIN.STRINGS.RESTORE_MSG, player.getLowercaseNickname(), newPassword), this.getKeyboard(player));
       } else {
         this.socialManager.broadcastMessage(dbField, id,
-            Placeholders.replace(Settings.IMP.MAIN.STRINGS.RESTORE_MSG_PREMIUM, player.getLowercaseNickname()),
-            this.keyboard
-        );
+            Placeholders.replace(Settings.IMP.MAIN.STRINGS.RESTORE_MSG_PREMIUM, player.getLowercaseNickname()), this.getKeyboard(player));
       }
     });
 
-    this.socialManager.addButtonEvent(UNLINK_BTN, (dbField, id) -> {
+    this.socialManager.addButtonEvent(PanelButton.UNLINK_BTN.getId(), (dbField, id) -> {
       if (Settings.IMP.MAIN.DISABLE_UNLINK) {
-        this.socialManager.broadcastMessage(dbField, id, Settings.IMP.MAIN.STRINGS.UNLINK_DISABLED, this.keyboard);
+        this.socialManager.broadcastMessage(dbField, id, Settings.IMP.MAIN.STRINGS.UNLINK_DISABLED);
         return;
       }
-      List<SocialPlayer> socialPlayerList = this.dao.queryForEq(dbField, id);
 
+      List<SocialPlayer> socialPlayerList = this.dao.queryForEq(dbField, id);
       if (socialPlayerList.size() == 0) {
         return;
       }
@@ -522,12 +484,12 @@ public class Addon {
       SocialPlayer player = socialPlayerList.get(0);
 
       if (player.isBlocked()) {
-        this.socialManager.broadcastMessage(dbField, id, Settings.IMP.MAIN.STRINGS.UNLINK_BLOCK_CONFLICT, this.keyboard);
+        this.socialManager.broadcastMessage(dbField, id, Settings.IMP.MAIN.STRINGS.UNLINK_BLOCK_CONFLICT, this.getKeyboard(player));
         return;
       }
 
       if (player.isTotpEnabled()) {
-        this.socialManager.broadcastMessage(dbField, id, Settings.IMP.MAIN.STRINGS.UNLINK_2FA_CONFLICT, this.keyboard);
+        this.socialManager.broadcastMessage(dbField, id, Settings.IMP.MAIN.STRINGS.UNLINK_2FA_CONFLICT, this.getKeyboard(player));
         return;
       }
 
@@ -568,9 +530,7 @@ public class Addon {
 
     this.nicknamePattern = Pattern.compile(net.elytrium.limboauth.Settings.IMP.MAIN.ALLOWED_NICKNAME_REGEX);
 
-    this.server.getEventManager().register(this, new LimboAuthListener(this, this.plugin, this.dao, this.socialManager,
-        this.keyboard, this.geoIp
-    ));
+    this.server.getEventManager().register(this, new LimboAuthListener(this, this.plugin, this.dao, this.socialManager, this.geoIp));
     this.server.getEventManager().register(this, new ReloadListener(this));
 
     if (this.purgeCacheTask != null) {
@@ -599,6 +559,12 @@ public class Addon {
     );
   }
 
+  public List<List<AbstractSocial.ButtonItem>> getKeyboard(SocialPlayer player) {
+    return Settings.IMP.MAIN.KEYBOARD.stream().map(row -> row.stream().map(item ->
+            new AbstractSocial.ButtonItem(item.TYPE.getId(), item.TYPE.getText(), item.COLOR.getColor(player))).collect(Collectors.toList()))
+        .collect(Collectors.toList());
+  }
+
   private void checkCache(Map<?, ? extends CachedUser> userMap, long time) {
     userMap.entrySet().stream()
         .filter(userEntry -> userEntry.getValue().getCheckTime() + time <= System.currentTimeMillis())
@@ -618,7 +584,7 @@ public class Addon {
     }
   }
 
-  public void linkSocial(String lowercaseNickname, String dbField, Long id) throws SQLException {
+  public SocialPlayer linkSocial(String lowercaseNickname, String dbField, Long id) throws SQLException {
     SocialPlayer socialPlayer = this.dao.queryForId(lowercaseNickname);
     if (socialPlayer == null) {
       Settings.IMP.MAIN.AFTER_LINKAGE_COMMANDS.forEach(command ->
@@ -627,13 +593,14 @@ public class Addon {
       this.dao.create(new SocialPlayer(lowercaseNickname));
     } else if (!Settings.IMP.MAIN.ALLOW_ACCOUNT_RELINK && SocialPlayer.DatabaseField.valueOf(dbField).getIdFor(socialPlayer) != null) {
       this.socialManager.broadcastMessage(dbField, id, Settings.IMP.MAIN.STRINGS.LINK_ALREADY);
-      return;
+      return null;
     }
 
     UpdateBuilder<SocialPlayer, String> updateBuilder = this.dao.updateBuilder();
     updateBuilder.where().eq(SocialPlayer.LOWERCASE_NICKNAME_FIELD, lowercaseNickname);
     updateBuilder.updateColumnValue(dbField, id);
     updateBuilder.update();
+    return socialPlayer;
   }
 
   public Integer getCode(String nickname) {
@@ -655,10 +622,6 @@ public class Addon {
 
   public ProxyServer getServer() {
     return this.server;
-  }
-
-  public List<List<AbstractSocial.ButtonItem>> getKeyboard() {
-    return this.keyboard;
   }
 
   public static class TempAccount {

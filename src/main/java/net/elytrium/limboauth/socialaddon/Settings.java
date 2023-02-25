@@ -112,6 +112,39 @@ public class Settings extends YamlConfig {
     @Comment("How many accounts can register the player per time (per purge-registration-cache-millis)")
     public int MAX_REGISTRATION_COUNT_PER_TIME = 3;
 
+    @Comment({
+        "Available buttons: INFO_BTN, BLOCK_BTN, TOTP_BTN, NOTIFY_BTN, KICK_BTN, RESTORE_BTN, UNLINK_BTN",
+        "Available colors: GREEN, RED, PRIMARY, SECONDARY, LINK, BLOCK_STATE, TOTP_STATE, NOTIFY_STATE"
+    })
+    // TODO: This won't work on current config serializer library. Elytrium Serializer is not available yet.
+    public List<List<KEYBOARD_ITEM>> KEYBOARD = List.of(
+        List.of(
+            new KEYBOARD_ITEM(PanelButton.INFO_BTN, PanelButton.Color.PRIMARY)
+        ),
+        List.of(
+            new KEYBOARD_ITEM(PanelButton.BLOCK_BTN, PanelButton.Color.BLOCK_STATE),
+            new KEYBOARD_ITEM(PanelButton.TOTP_BTN, PanelButton.Color.TOTP_STATE)
+        ),
+        List.of(
+            new KEYBOARD_ITEM(PanelButton.NOTIFY_BTN, PanelButton.Color.NOTIFY_STATE)
+        ),
+        List.of(
+            new KEYBOARD_ITEM(PanelButton.KICK_BTN, PanelButton.Color.RED),
+            new KEYBOARD_ITEM(PanelButton.RESTORE_BTN, PanelButton.Color.RED),
+            new KEYBOARD_ITEM(PanelButton.UNLINK_BTN, PanelButton.Color.RED)
+        )
+    );
+
+    public static class KEYBOARD_ITEM {
+      public PanelButton TYPE;
+      public PanelButton.Color COLOR;
+
+      public KEYBOARD_ITEM(PanelButton type, PanelButton.Color color) {
+        this.TYPE = type;
+        this.COLOR = color;
+      }
+    }
+
     @Create
     public MAIN.VK VK;
 
@@ -220,6 +253,7 @@ public class Settings extends YamlConfig {
       public String LINK_SUCCESS_GAME = "{PRFX} Social was successfully linked";
       public String LINK_SUCCESS = "✅ Social was successfully linked{NL}Use '!keyboard' to show keyboard";
       public String LINK_ALREADY = "Account is already linked";
+      public String LINK_ALREADY_GAME = "{PRFX} Account is already linked";
       public String LINK_SOCIAL_REGISTER_CMD_USAGE = "You didn't specify a nickname. Enter '!account register <nickname>'";
       public String LINK_SOCIAL_CMD_USAGE = "You didn't specify a nickname. Enter '!account link <nickname>'";
       public String LINK_UNKNOWN_ACCOUNT = "There is no account with this nickname";

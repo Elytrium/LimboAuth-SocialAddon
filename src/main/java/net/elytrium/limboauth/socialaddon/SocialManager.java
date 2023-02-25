@@ -125,15 +125,19 @@ public class SocialManager {
   }
 
   public void registerKeyboard(List<List<AbstractSocial.ButtonItem>> keyboard) {
-    for (List<AbstractSocial.ButtonItem> items : keyboard) {
-      for (AbstractSocial.ButtonItem item : items) {
-        this.buttonIdMap.put(item.getValue(), item.getId());
-      }
-    }
+    keyboard.forEach(this::registerButtons);
+  }
+
+  public void registerButtons(List<AbstractSocial.ButtonItem> buttons) {
+    buttons.forEach(this::registerButton);
   }
 
   public void registerButton(AbstractSocial.ButtonItem item) {
-    this.buttonIdMap.put(item.getValue(), item.getId());
+    this.registerButton(item.getId(), item.getValue());
+  }
+
+  public void registerButton(String id, String text) {
+    this.buttonIdMap.put(text, id);
   }
 
   public void broadcastMessage(SocialPlayer player, String message, List<List<AbstractSocial.ButtonItem>> item) {
