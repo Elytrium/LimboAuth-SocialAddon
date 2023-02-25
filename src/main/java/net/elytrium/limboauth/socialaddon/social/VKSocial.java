@@ -178,18 +178,27 @@ public class VKSocial extends AbstractSocial {
     }).collect(Collectors.toList())).collect(Collectors.toList());
 
     try {
-      Keyboard keyboard = new Keyboard()
-          .setButtons(vkButtons)
-          .setInline(visibility == ButtonVisibility.PREFER_INLINE)
-          .setOneTime(false);
+      if (buttons.isEmpty()) {
+        this.vk.messages()
+                .send(this.actor)
+                .userId(id.intValue())
+                .message(content)
+                .randomId(ThreadLocalRandom.current().nextInt())
+                .execute();
+      } else {
+        Keyboard keyboard = new Keyboard()
+                .setButtons(vkButtons)
+                .setInline(visibility == ButtonVisibility.PREFER_INLINE)
+                .setOneTime(false);
 
-      this.vk.messages()
-          .send(this.actor)
-          .userId(id.intValue())
-          .message(content)
-          .keyboard(keyboard)
-          .randomId(ThreadLocalRandom.current().nextInt())
-          .execute();
+        this.vk.messages()
+                .send(this.actor)
+                .userId(id.intValue())
+                .message(content)
+                .keyboard(keyboard)
+                .randomId(ThreadLocalRandom.current().nextInt())
+                .execute();
+      }
     } catch (ClientException | ApiException e) {
       if (Settings.IMP.MAIN.DEBUG) {
         e.printStackTrace(); // printStackTrace is necessary there
