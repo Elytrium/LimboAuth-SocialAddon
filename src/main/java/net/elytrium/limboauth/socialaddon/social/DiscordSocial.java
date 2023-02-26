@@ -30,6 +30,7 @@ import net.dv8tion.jda.api.entities.Role;
 import net.dv8tion.jda.api.entities.User;
 import net.dv8tion.jda.api.events.interaction.component.ButtonInteractionEvent;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
+import net.dv8tion.jda.api.exceptions.InvalidTokenException;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import net.dv8tion.jda.api.interactions.components.ActionRow;
 import net.dv8tion.jda.api.interactions.components.buttons.Button;
@@ -59,12 +60,15 @@ public class DiscordSocial extends AbstractSocial {
         jdaBuilder = JDABuilder.create(Settings.IMP.MAIN.DISCORD.TOKEN, GatewayIntent.DIRECT_MESSAGES);
       }
 
-      this.jda = jdaBuilder.disableCache(CacheFlag.ACTIVITY, CacheFlag.VOICE_STATE, CacheFlag.EMOJI, CacheFlag.CLIENT_STATUS, CacheFlag.ONLINE_STATUS)
+      this.jda = jdaBuilder.disableCache(
+              CacheFlag.ACTIVITY, CacheFlag.CLIENT_STATUS, CacheFlag.EMOJI, CacheFlag.FORUM_TAGS, CacheFlag.MEMBER_OVERRIDES, CacheFlag.ONLINE_STATUS,
+              CacheFlag.ROLE_TAGS, CacheFlag.SCHEDULED_EVENTS, CacheFlag.STICKER, CacheFlag.VOICE_STATE
+          )
           .setActivity(Settings.IMP.MAIN.DISCORD.ACTIVITY_ENABLED
               ? Activity.of(Settings.IMP.MAIN.DISCORD.ACTIVITY_TYPE, Settings.IMP.MAIN.DISCORD.ACTIVITY_NAME, Settings.IMP.MAIN.DISCORD.ACTIVITY_URL)
               : null)
           .build().awaitReady();
-    } catch (InterruptedException e) {
+    } catch (InterruptedException | InvalidTokenException e) {
       throw new SocialInitializationException(e);
     }
 
@@ -226,6 +230,7 @@ public class DiscordSocial extends AbstractSocial {
   }
 
   private final class RoleAction {
+
     private final RoleActionType action;
     private final Role role;
 
