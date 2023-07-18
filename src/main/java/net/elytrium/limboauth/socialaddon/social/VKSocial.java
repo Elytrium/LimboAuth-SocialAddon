@@ -124,7 +124,11 @@ public class VKSocial extends AbstractSocial {
           // ignored
         } catch (ClientException | ApiException e) {
           e.printStackTrace(); // printStackTrace is necessary there
-          Thread.sleep(5000L);
+          try {
+            Thread.sleep(5000);
+          } catch (InterruptedException ex) {
+            throw new RuntimeException(ex);
+          }
         }
       }
     }).start();
