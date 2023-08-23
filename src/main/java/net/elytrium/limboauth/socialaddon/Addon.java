@@ -618,7 +618,7 @@ public class Addon {
     }
   }
 
-  public void linkSocial(String lowercaseNickname, String dbField, Long id) throws SQLException {
+  public boolean linkSocial(String lowercaseNickname, String dbField, Long id) throws SQLException {
     SocialPlayer socialPlayer = this.dao.queryForId(lowercaseNickname);
     if (socialPlayer == null) {
       Settings.IMP.MAIN.AFTER_LINKAGE_COMMANDS.forEach(command ->
@@ -627,13 +627,14 @@ public class Addon {
       this.dao.create(new SocialPlayer(lowercaseNickname));
     } else if (!Settings.IMP.MAIN.ALLOW_ACCOUNT_RELINK && SocialPlayer.DatabaseField.valueOf(dbField).getIdFor(socialPlayer) != null) {
       this.socialManager.broadcastMessage(dbField, id, Settings.IMP.MAIN.STRINGS.LINK_ALREADY);
-      return;
+      return false;
     }
 
     UpdateBuilder<SocialPlayer, String> updateBuilder = this.dao.updateBuilder();
     updateBuilder.where().eq(SocialPlayer.LOWERCASE_NICKNAME_FIELD, lowercaseNickname);
     updateBuilder.updateColumnValue(dbField, id);
     updateBuilder.update();
+    return true;
   }
 
   public Integer getCode(String nickname) {

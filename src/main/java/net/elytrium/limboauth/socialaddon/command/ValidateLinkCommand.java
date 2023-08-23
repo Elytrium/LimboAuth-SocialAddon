@@ -52,11 +52,15 @@ public class ValidateLinkCommand implements SimpleCommand {
           if (validCode != null) {
             if (validCode == Integer.parseInt(args[0])) {
               Addon.TempAccount tempAccount = this.addon.getTempAccount(username);
-              this.addon.linkSocial(username, tempAccount.getDbField(), tempAccount.getId());
-              this.addon.getSocialManager().registerHook(tempAccount.getDbField(), tempAccount.getId());
-              this.addon.getSocialManager()
-                  .broadcastMessage(tempAccount.getDbField(), tempAccount.getId(), Settings.IMP.MAIN.STRINGS.LINK_SUCCESS, this.addon.getKeyboard());
-              player.sendMessage(Addon.getSerializer().deserialize(Settings.IMP.MAIN.STRINGS.LINK_SUCCESS_GAME));
+              boolean isLinked = this.addon.linkSocial(username, tempAccount.getDbField(), tempAccount.getId());
+              if (isLinked) {
+                this.addon.getSocialManager().registerHook(tempAccount.getDbField(), tempAccount.getId());
+                this.addon.getSocialManager()
+                        .broadcastMessage(tempAccount.getDbField(), tempAccount.getId(), Settings.IMP.MAIN.STRINGS.LINK_SUCCESS, this.addon.getKeyboard());
+                player.sendMessage(Addon.getSerializer().deserialize(Settings.IMP.MAIN.STRINGS.LINK_SUCCESS_GAME));
+              } else {
+                player.sendMessage(Addon.getSerializer().deserialize(Settings.IMP.MAIN.STRINGS.LINK_ALREADY_GAME));
+              }
             } else {
               source.sendMessage(Addon.getSerializer()
                   .deserialize(Placeholders.replace(Settings.IMP.MAIN.STRINGS.LINK_WRONG_CODE, player.getUsername())));
