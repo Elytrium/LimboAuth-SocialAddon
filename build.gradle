@@ -49,9 +49,14 @@ dependencies {
 
     implementation("net.dv8tion:JDA:$jdaVersion") {
         exclude module: "opus-java"
+        exclude module: "slf4j-api"
     }
-    implementation("org.telegram:telegrambots:$telegrambotsVersion")
-    implementation("com.vk.api:sdk:$vkVersion")
+    implementation("org.telegram:telegrambots:$telegrambotsVersion") {
+        exclude module: "slf4j-api"
+    }
+    implementation("com.vk.api:sdk:$vkVersion") {
+        exclude module: "slf4j-api"
+    }
 
     implementation("com.maxmind.geoip2:geoip2:$geoipVersion")
     implementation("org.apache.commons:commons-compress:$apacheCompressCommonsVersion")
