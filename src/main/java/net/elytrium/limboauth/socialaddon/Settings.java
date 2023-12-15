@@ -219,6 +219,7 @@ public class Settings extends YamlConfig {
       public String LINK_WRONG_CODE = "{PRFX} Wrong code, run '!account link {NICKNAME}' again";
       public String LINK_SUCCESS_GAME = "{PRFX} Social was successfully linked";
       public String LINK_SUCCESS = "✅ Social was successfully linked{NL}Use '!keyboard' to show keyboard";
+      public String LINK_ALREADY_GAME = "{PRFX} Social is already linked";
       public String LINK_ALREADY = "Account is already linked";
       public String LINK_SOCIAL_REGISTER_CMD_USAGE = "You didn't specify a nickname. Enter '!account register <nickname>'";
       public String LINK_SOCIAL_CMD_USAGE = "You didn't specify a nickname. Enter '!account link <nickname>'";
