@@ -17,12 +17,16 @@
 
 package net.elytrium.limboauth.socialaddon.command;
 
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
 import com.velocitypowered.api.command.CommandSource;
 import com.velocitypowered.api.command.SimpleCommand;
 import com.velocitypowered.api.proxy.Player;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.Locale;
+import java.util.concurrent.TimeUnit;
+
 import net.elytrium.commons.config.Placeholders;
 import net.elytrium.limboauth.socialaddon.Addon;
 import net.elytrium.limboauth.socialaddon.Settings;
@@ -30,6 +34,8 @@ import net.elytrium.limboauth.socialaddon.Settings;
 public class ValidateLinkCommand implements SimpleCommand {
 
   private final Addon addon;
+
+  private final Cache<String, Boolean> confirmLinking = CacheBuilder.newBuilder().expireAfterWrite(15, TimeUnit.SECONDS).build();
 
   public ValidateLinkCommand(Addon addon) {
     this.addon = addon;
@@ -51,6 +57,12 @@ public class ValidateLinkCommand implements SimpleCommand {
           Integer validCode = this.addon.getCode(username);
           if (validCode != null) {
             if (validCode == Integer.parseInt(args[0])) {
+              if (confirmLinking.getIfPresent(username) == null) {
+                confirmLinking.put(username, true);
+                source.sendMessage(Addon.getSerializer().deserialize(Placeholders.replace(Settings.IMP.MAIN.STRINGS.LINK_CONFIRM)));
+                return;
+              }
+              confirmLinking.invalidate(username);
               Addon.TempAccount tempAccount = this.addon.getTempAccount(username);
               this.addon.linkSocial(username, tempAccount.getDbField(), tempAccount.getId());
               this.addon.getSocialManager().registerHook(tempAccount.getDbField(), tempAccount.getId());
