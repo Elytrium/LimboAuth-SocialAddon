@@ -59,7 +59,7 @@ public class ValidateLinkCommand implements SimpleCommand {
             if (validCode == Integer.parseInt(args[0])) {
               if (confirmLinking.getIfPresent(username) == null) {
                 confirmLinking.put(username, true);
-                source.sendMessage(Addon.getSerializer().deserialize(Placeholders.replace(Settings.IMP.MAIN.STRINGS.LINK_CONFIRM)));
+                source.sendMessage(Addon.getSerializer().deserialize(Settings.IMP.MAIN.STRINGS.LINK_CONFIRM));
                 return;
               }
               confirmLinking.invalidate(username);
