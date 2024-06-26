@@ -48,5 +48,5 @@ jobs:
           game_versions: 1.7.2
           release_type: release
           loaders: velocity
-          featured: false
+          featured: true
           project_id: fPyQl4rd
