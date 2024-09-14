@@ -622,7 +622,6 @@ public class Addon {
 
   public void linkSocial(String lowercaseNickname, String dbField, Long id) throws SQLException {
     SocialPlayer socialPlayer = this.dao.queryForId(lowercaseNickname);
-    System.out.println(socialPlayer);
     if (socialPlayer == null) {
       Settings.IMP.MAIN.AFTER_LINKAGE_COMMANDS.forEach(command ->
           this.server.getCommandManager().executeAsync(p -> Tristate.TRUE, command.replace("{NICKNAME}", lowercaseNickname)));
