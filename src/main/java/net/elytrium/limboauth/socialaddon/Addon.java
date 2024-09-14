@@ -531,8 +531,11 @@ public class Addon {
         return;
       }
 
+      Long playerId = SocialPlayer.DatabaseField.valueOf(dbField).getIdFor(player);
+      SocialPlayer.DatabaseField.valueOf(dbField).setIdFor(player, null);
       boolean allUnlinked = Arrays.stream(SocialPlayer.DatabaseField.values())
           .noneMatch(v -> v.getIdFor(player) != null);
+      SocialPlayer.DatabaseField.valueOf(dbField).setIdFor(player, playerId);
 
       if (Settings.IMP.MAIN.UNLINK_BTN_ALL || allUnlinked) {
         this.socialManager.unregisterHook(player);
@@ -548,7 +551,6 @@ public class Addon {
 
         this.socialManager.unregisterHook(dbField, player);
       }
-      SocialPlayer.DatabaseField.valueOf(dbField).setIdFor(player, null);
 
       this.socialManager.broadcastMessage(dbField, id, Settings.IMP.MAIN.STRINGS.UNLINK_SUCCESS);
       this.server.getPlayer(player.getLowercaseNickname()).ifPresent(p ->
@@ -620,6 +622,7 @@ public class Addon {
 
   public void linkSocial(String lowercaseNickname, String dbField, Long id) throws SQLException {
     SocialPlayer socialPlayer = this.dao.queryForId(lowercaseNickname);
+    System.out.println(socialPlayer);
     if (socialPlayer == null) {
       Settings.IMP.MAIN.AFTER_LINKAGE_COMMANDS.forEach(command ->
           this.server.getCommandManager().executeAsync(p -> Tristate.TRUE, command.replace("{NICKNAME}", lowercaseNickname)));
