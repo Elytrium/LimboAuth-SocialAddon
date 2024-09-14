@@ -531,13 +531,12 @@ public class Addon {
         return;
       }
 
-      SocialPlayer.DatabaseField.valueOf(dbField).setIdFor(player, null);
       boolean allUnlinked = Arrays.stream(SocialPlayer.DatabaseField.values())
           .noneMatch(v -> v.getIdFor(player) != null);
 
       if (Settings.IMP.MAIN.UNLINK_BTN_ALL || allUnlinked) {
-        this.dao.delete(player);
         this.socialManager.unregisterHook(player);
+        this.dao.delete(player);
 
         Settings.IMP.MAIN.AFTER_UNLINKAGE_COMMANDS.forEach(command ->
             this.server.getCommandManager().executeAsync(p -> Tristate.TRUE, command.replace("{NICKNAME}", player.getLowercaseNickname())));
@@ -549,6 +548,7 @@ public class Addon {
 
         this.socialManager.unregisterHook(dbField, player);
       }
+      SocialPlayer.DatabaseField.valueOf(dbField).setIdFor(player, null);
 
       this.socialManager.broadcastMessage(dbField, id, Settings.IMP.MAIN.STRINGS.UNLINK_SUCCESS);
       this.server.getPlayer(player.getLowercaseNickname()).ifPresent(p ->
