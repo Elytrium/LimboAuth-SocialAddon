@@ -127,6 +127,13 @@ public class Settings extends YamlConfig {
       public boolean ENABLED = false;
       public String TOKEN = "1234567890";
 
+      public boolean PROXY_ENABLED = false;
+      public String PROXY_ADDRESS = "127.0.0.1";
+      public int PROXY_PORT = 8080;
+      @Comment("Make username empty to disable proxy auth")
+      public String PROXY_USERNAME = "user";
+      public String PROXY_PASSWORD = "pass";
+
       @Comment({
           "Available: ",
           "addrole <role id>",

@@ -17,6 +17,10 @@
 
 package net.elytrium.limboauth.socialaddon.social;
 
+import com.neovisionaries.ws.client.WebSocketFactory;
+import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.net.Proxy;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -39,7 +43,14 @@ import net.dv8tion.jda.api.requests.GatewayIntent;
 import net.dv8tion.jda.api.utils.cache.CacheFlag;
 import net.elytrium.limboauth.socialaddon.Settings;
 import net.elytrium.limboauth.socialaddon.model.SocialPlayer;
+import okhttp3.Authenticator;
+import okhttp3.Credentials;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.Response;
+import okhttp3.Route;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 public class DiscordSocial extends AbstractSocial {
 
@@ -58,6 +69,35 @@ public class DiscordSocial extends AbstractSocial {
         jdaBuilder = JDABuilder.create(Settings.IMP.MAIN.DISCORD.TOKEN, GatewayIntent.DIRECT_MESSAGES, GatewayIntent.GUILD_MEMBERS);
       } else {
         jdaBuilder = JDABuilder.create(Settings.IMP.MAIN.DISCORD.TOKEN, GatewayIntent.DIRECT_MESSAGES);
+      }
+
+      if (Settings.IMP.MAIN.DISCORD.PROXY_ENABLED) {
+        Proxy httpProxy = new Proxy(Proxy.Type.HTTP, new InetSocketAddress(Settings.IMP.MAIN.DISCORD.PROXY_ADDRESS, Settings.IMP.MAIN.DISCORD.PROXY_PORT));
+        WebSocketFactory webSocketFactory = new WebSocketFactory();
+        webSocketFactory.getProxySettings()
+                .setHost(Settings.IMP.MAIN.DISCORD.PROXY_ADDRESS)
+                .setPort(Settings.IMP.MAIN.DISCORD.PROXY_PORT);
+
+        OkHttpClient.Builder builder = new OkHttpClient.Builder().proxy(httpProxy);
+
+        if (!Settings.IMP.MAIN.DISCORD.PROXY_USERNAME.isEmpty()) {
+          builder.proxyAuthenticator(new Authenticator() {
+            @Override
+            public @NotNull Request authenticate(@Nullable Route route, @NotNull Response response) throws IOException {
+              String credential = Credentials.basic(Settings.IMP.MAIN.DISCORD.PROXY_USERNAME, Settings.IMP.MAIN.DISCORD.PROXY_PASSWORD);
+              return response.request().newBuilder()
+                      .header("Proxy-Authorization", credential)
+                      .build();
+            }
+          });
+
+          webSocketFactory.getProxySettings()
+                  .setCredentials(Settings.IMP.MAIN.DISCORD.PROXY_USERNAME, Settings.IMP.MAIN.DISCORD.PROXY_PASSWORD);
+        }
+
+        jdaBuilder = jdaBuilder
+                .setHttpClientBuilder(builder)
+                .setWebsocketFactory(webSocketFactory);
       }
 
       this.jda = jdaBuilder.disableCache(CacheFlag.ACTIVITY, CacheFlag.VOICE_STATE, CacheFlag.EMOTE, CacheFlag.CLIENT_STATUS, CacheFlag.ONLINE_STATUS)
