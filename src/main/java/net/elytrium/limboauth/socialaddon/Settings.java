@@ -170,6 +170,7 @@ public class Settings extends YamlConfig {
     public static class TELEGRAM {
       public boolean ENABLED = false;
       public String TOKEN = "1234567890";
+      public String PARSE_MODE = "HTML";
     }
 
     @Create
