@@ -125,6 +125,7 @@ public class Addon {
   }
 
   @Inject
+  @SuppressFBWarnings("CT_CONSTRUCTOR_THROW")
   public Addon(ProxyServer server, Logger logger, Metrics.Factory metricsFactory, @DataDirectory Path dataDirectory) {
     this.server = server;
     this.logger = logger;

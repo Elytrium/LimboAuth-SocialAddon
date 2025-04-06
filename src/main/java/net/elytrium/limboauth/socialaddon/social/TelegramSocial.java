@@ -17,6 +17,7 @@
 
 package net.elytrium.limboauth.socialaddon.social;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.util.List;
 import java.util.stream.Collectors;
 import net.elytrium.limboauth.socialaddon.Settings;
@@ -44,6 +45,7 @@ public class TelegramSocial extends AbstractSocial {
   private TGBot bot;
   private BotSession botSession;
 
+  @SuppressFBWarnings("CT_CONSTRUCTOR_THROW")
   public TelegramSocial(SocialMessageListener onMessageReceived, SocialButtonListener onButtonClicked) throws SocialInitializationException {
     super(onMessageReceived, onButtonClicked);
 

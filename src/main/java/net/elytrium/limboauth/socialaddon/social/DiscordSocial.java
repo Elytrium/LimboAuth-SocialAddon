@@ -17,6 +17,7 @@
 
 package net.elytrium.limboauth.socialaddon.social;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -177,6 +178,7 @@ public class DiscordSocial extends AbstractSocial {
     private final SocialMessageListener onMessageReceived;
     private final SocialButtonListener onButtonClicked;
 
+    @SuppressFBWarnings("CT_CONSTRUCTOR_THROW")
     Listener(JDA jda, SocialMessageListener onMessageReceived, SocialButtonListener onButtonClicked) {
       List<Role> list = new ArrayList<>();
       for (Object requiredRole : Settings.IMP.MAIN.DISCORD.REQUIRED_ROLES) {
