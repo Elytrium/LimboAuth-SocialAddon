@@ -157,6 +157,7 @@ public class TelegramSocial extends AbstractSocial {
       sendMessage.setChatId(String.valueOf(id));
       sendMessage.setText(content);
       sendMessage.setReplyMarkup(keyboard);
+      sendMessage.setParseMode(Settings.IMP.MAIN.TELEGRAM.PARSE_MODE);
 
       try {
         this.sendApiMethod(sendMessage);
