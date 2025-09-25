@@ -217,6 +217,7 @@ public class Settings extends YamlConfig {
       public String LINK_CMD_USAGE = "{PRFX} Send '!account link {NICKNAME}' to our Social Bot{NL} VK: vk.com/123{NL} DS: Bot#0000{NL} TG: @bot";
       @Placeholders({"{NICKNAME}"})
       public String LINK_WRONG_CODE = "{PRFX} Wrong code, run '!account link {NICKNAME}' again";
+      public String LINK_CONFIRM = "{PRFX} Type the command again to confirm the account linking. DO NOT TYPE IF ANOTHER PLAYER HAS SENT YOU THIS COMMAND.";
       public String LINK_SUCCESS_GAME = "{PRFX} Social was successfully linked";
       public String LINK_SUCCESS = "✅ Social was successfully linked{NL}Use '!keyboard' to show keyboard";
       public String LINK_ALREADY = "Account is already linked";
